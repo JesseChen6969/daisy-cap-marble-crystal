@@ -1,0 +1,869 @@
+
+> preview
+> node scripts/with-app-env.mjs vite preview
+
+
+ ╭────────── [Build Info] ─────────────╮
+ │                                     │
+ │  - Build Directory: .vercel/output  │
+ │  - Date: 10/18/2026, 3:09:50 PM     │
+ │  - Nitro Version: 3.0.260610-beta   │
+ │  - Nitro Preset: vercel             │
+ │                                     │
+ ╰─────────────────────────────────────╯
+
+  ➜  Local:   http://127.0.0.1:8081/
+Error: aborted
+    at abortIncoming (node:_http_server:838:17)
+    ... 3 lines matching cause stack trace ...
+    at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+  cause: Error: aborted
+      at abortIncoming (node:_http_server:838:17)
+      at socketOnClose (node:_http_server:832:3)
+      at Socket.emit (node:events:531:35)
+      at TCP.<anonymous> (node:net:347:12)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: 'ECONNRESET'
+  },
+  status: 500,
+  statusText: undefined,
+  headers: undefined,
+  data: undefined,
+  body: undefined,
+  unhandled: true
+}
+
+> preview
+> node scripts/with-app-env.mjs vite preview
+
+
+ ╭────────── [Build Info] ─────────────╮
+ │                                     │
+ │  - Build Directory: .vercel/output  │
+ │  - Date: 10/18/2026, 3:35:37 PM     │
+ │  - Nitro Version: 3.0.260610-beta   │
+ │  - Nitro Preset: vercel             │
+ │                                     │
+ ╰─────────────────────────────────────╯
+
+  ➜  Local:   http://127.0.0.1:8081/
+Error: aborted
+    at abortIncoming (node:_http_server:838:17)
+    ... 3 lines matching cause stack trace ...
+    at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+  cause: Error: aborted
+      at abortIncoming (node:_http_server:838:17)
+      at socketOnClose (node:_http_server:832:3)
+      at Socket.emit (node:events:531:35)
+      at TCP.<anonymous> (node:net:347:12)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: 'ECONNRESET'
+  },
+  status: 500,
+  statusText: undefined,
+  headers: undefined,
+  data: undefined,
+  body: undefined,
+  unhandled: true
+}
+Error: aborted
+    at abortIncoming (node:_http_server:838:17)
+    ... 3 lines matching cause stack trace ...
+    at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+  cause: Error: aborted
+      at abortIncoming (node:_http_server:838:17)
+      at socketOnClose (node:_http_server:832:3)
+      at Socket.emit (node:events:531:35)
+      at TCP.<anonymous> (node:net:347:12)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: 'ECONNRESET'
+  },
+  status: 500,
+  statusText: undefined,
+  headers: undefined,
+  data: undefined,
+  body: undefined,
+  unhandled: true
+}
+Error: aborted
+    at abortIncoming (node:_http_server:838:17)
+    ... 3 lines matching cause stack trace ...
+    at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+  cause: Error: aborted
+      at abortIncoming (node:_http_server:838:17)
+      at socketOnClose (node:_http_server:832:3)
+      at Socket.emit (node:events:531:35)
+      at TCP.<anonymous> (node:net:347:12)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: 'ECONNRESET'
+  },
+  status: 500,
+  statusText: undefined,
+  headers: undefined,
+  data: undefined,
+  body: undefined,
+  unhandled: true
+}
+
+> preview
+> node scripts/with-app-env.mjs vite preview
+
+
+ ╭────────── [Build Info] ─────────────╮
+ │                                     │
+ │  - Build Directory: .vercel/output  │
+ │  - Date: 10/18/2026, 3:35:37 PM     │
+ │  - Nitro Version: 3.0.260610-beta   │
+ │  - Nitro Preset: vercel             │
+ │                                     │
+ ╰─────────────────────────────────────╯
+
+  ➜  Local:   http://127.0.0.1:8081/
+Error: aborted
+    at abortIncoming (node:_http_server:838:17)
+    ... 3 lines matching cause stack trace ...
+    at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+  cause: Error: aborted
+      at abortIncoming (node:_http_server:838:17)
+      at socketOnClose (node:_http_server:832:3)
+      at Socket.emit (node:events:531:35)
+      at TCP.<anonymous> (node:net:347:12)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: 'ECONNRESET'
+  },
+  status: 500,
+  statusText: undefined,
+  headers: undefined,
+  data: undefined,
+  body: undefined,
+  unhandled: true
+}
+Error: aborted
+    at abortIncoming (node:_http_server:838:17)
+    ... 3 lines matching cause stack trace ...
+    at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+  cause: Error: aborted
+      at abortIncoming (node:_http_server:838:17)
+      at socketOnClose (node:_http_server:832:3)
+      at Socket.emit (node:events:531:35)
+      at TCP.<anonymous> (node:net:347:12)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: 'ECONNRESET'
+  },
+  status: 500,
+  statusText: undefined,
+  headers: undefined,
+  data: undefined,
+  body: undefined,
+  unhandled: true
+}
+
+> preview
+> node scripts/with-app-env.mjs vite preview
+
+
+ ╭────────── [Build Info] ─────────────╮
+ │                                     │
+ │  - Build Directory: .vercel/output  │
+ │  - Date: 10/18/2026, 3:46:24 PM     │
+ │  - Nitro Version: 3.0.260610-beta   │
+ │  - Nitro Preset: vercel             │
+ │                                     │
+ ╰─────────────────────────────────────╯
+
+  ➜  Local:   http://127.0.0.1:8081/
+Error: aborted
+    at abortIncoming (node:_http_server:838:17)
+    ... 3 lines matching cause stack trace ...
+    at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+  cause: Error: aborted
+      at abortIncoming (node:_http_server:838:17)
+      at socketOnClose (node:_http_server:832:3)
+      at Socket.emit (node:events:531:35)
+      at TCP.<anonymous> (node:net:347:12)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: 'ECONNRESET'
+  },
+  status: 500,
+  statusText: undefined,
+  headers: undefined,
+  data: undefined,
+  body: undefined,
+  unhandled: true
+}
+Error: aborted
+    at abortIncoming (node:_http_server:838:17)
+    ... 3 lines matching cause stack trace ...
+    at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+  cause: Error: aborted
+      at abortIncoming (node:_http_server:838:17)
+      at socketOnClose (node:_http_server:832:3)
+      at Socket.emit (node:events:531:35)
+      at TCP.<anonymous> (node:net:347:12)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: 'ECONNRESET'
+  },
+  status: 500,
+  statusText: undefined,
+  headers: undefined,
+  data: undefined,
+  body: undefined,
+  unhandled: true
+}
+
+> preview
+> node scripts/with-app-env.mjs vite preview
+
+
+ ╭────────── [Build Info] ─────────────╮
+ │                                     │
+ │  - Build Directory: .vercel/output  │
+ │  - Date: 10/18/2026, 4:11:14 PM     │
+ │  - Nitro Version: 3.0.260610-beta   │
+ │  - Nitro Preset: vercel             │
+ │                                     │
+ ╰─────────────────────────────────────╯
+
+  ➜  Local:   http://127.0.0.1:8081/
+Error: aborted
+    at abortIncoming (node:_http_server:838:17)
+    ... 3 lines matching cause stack trace ...
+    at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+  cause: Error: aborted
+      at abortIncoming (node:_http_server:838:17)
+      at socketOnClose (node:_http_server:832:3)
+      at Socket.emit (node:events:531:35)
+      at TCP.<anonymous> (node:net:347:12)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: 'ECONNRESET'
+  },
+  status: 500,
+  statusText: undefined,
+  headers: undefined,
+  data: undefined,
+  body: undefined,
+  unhandled: true
+}
+Error: aborted
+    at abortIncoming (node:_http_server:838:17)
+    ... 3 lines matching cause stack trace ...
+    at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+  cause: Error: aborted
+      at abortIncoming (node:_http_server:838:17)
+      at socketOnClose (node:_http_server:832:3)
+      at Socket.emit (node:events:531:35)
+      at TCP.<anonymous> (node:net:347:12)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: 'ECONNRESET'
+  },
+  status: 500,
+  statusText: undefined,
+  headers: undefined,
+  data: undefined,
+  body: undefined,
+  unhandled: true
+}
+Error: aborted
+    at abortIncoming (node:_http_server:838:17)
+    ... 3 lines matching cause stack trace ...
+    at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+  cause: Error: aborted
+      at abortIncoming (node:_http_server:838:17)
+      at socketOnClose (node:_http_server:832:3)
+      at Socket.emit (node:events:531:35)
+      at TCP.<anonymous> (node:net:347:12)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: 'ECONNRESET'
+  },
+  status: 500,
+  statusText: undefined,
+  headers: undefined,
+  data: undefined,
+  body: undefined,
+  unhandled: true
+}
+
+> preview
+> node scripts/with-app-env.mjs vite preview
+
+
+ ╭────────── [Build Info] ─────────────╮
+ │                                     │
+ │  - Build Directory: .vercel/output  │
+ │  - Date: 10/19/2026, 1:39:30 AM     │
+ │  - Nitro Version: 3.0.260610-beta   │
+ │  - Nitro Preset: vercel             │
+ │                                     │
+ ╰─────────────────────────────────────╯
+
+  ➜  Local:   http://127.0.0.1:8081/
+Error: aborted
+    at abortIncoming (node:_http_server:838:17)
+    ... 3 lines matching cause stack trace ...
+    at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+  cause: Error: aborted
+      at abortIncoming (node:_http_server:838:17)
+      at socketOnClose (node:_http_server:832:3)
+      at Socket.emit (node:events:531:35)
+      at TCP.<anonymous> (node:net:347:12)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: 'ECONNRESET'
+  },
+  status: 500,
+  statusText: undefined,
+  headers: undefined,
+  data: undefined,
+  body: undefined,
+  unhandled: true
+}
+hot-board 上游 403
+Error: aborted
+    at abortIncoming (node:_http_server:838:17)
+    ... 3 lines matching cause stack trace ...
+    at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+  cause: Error: aborted
+      at abortIncoming (node:_http_server:838:17)
+      at socketOnClose (node:_http_server:832:3)
+      at Socket.emit (node:events:531:35)
+      at TCP.<anonymous> (node:net:347:12)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: 'ECONNRESET'
+  },
+  status: 500,
+  statusText: undefined,
+  headers: undefined,
+  data: undefined,
+  body: undefined,
+  unhandled: true
+}
+Error: aborted
+    at abortIncoming (node:_http_server:838:17)
+    ... 3 lines matching cause stack trace ...
+    at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+  cause: Error: aborted
+      at abortIncoming (node:_http_server:838:17)
+      at socketOnClose (node:_http_server:832:3)
+      at Socket.emit (node:events:531:35)
+      at TCP.<anonymous> (node:net:347:12)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: 'ECONNRESET'
+  },
+  status: 500,
+  statusText: undefined,
+  headers: undefined,
+  data: undefined,
+  body: undefined,
+  unhandled: true
+}
+hot-board 上游 403
+Error: aborted
+    at abortIncoming (node:_http_server:838:17)
+    ... 3 lines matching cause stack trace ...
+    at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+  cause: Error: aborted
+      at abortIncoming (node:_http_server:838:17)
+      at socketOnClose (node:_http_server:832:3)
+      at Socket.emit (node:events:531:35)
+      at TCP.<anonymous> (node:net:347:12)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: 'ECONNRESET'
+  },
+  status: 500,
+  statusText: undefined,
+  headers: undefined,
+  data: undefined,
+  body: undefined,
+  unhandled: true
+}
+hot-board 上游 403
+
+> preview
+> node scripts/with-app-env.mjs vite preview
+
+
+ ╭────────── [Build Info] ─────────────╮
+ │                                     │
+ │  - Build Directory: .vercel/output  │
+ │  - Date: 10/19/2026, 2:23:07 AM     │
+ │  - Nitro Version: 3.0.260610-beta   │
+ │  - Nitro Preset: vercel             │
+ │                                     │
+ ╰─────────────────────────────────────╯
+
+  ➜  Local:   http://127.0.0.1:8081/
+Error: aborted
+    at abortIncoming (node:_http_server:838:17)
+    ... 3 lines matching cause stack trace ...
+    at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+  cause: Error: aborted
+      at abortIncoming (node:_http_server:838:17)
+      at socketOnClose (node:_http_server:832:3)
+      at Socket.emit (node:events:531:35)
+      at TCP.<anonymous> (node:net:347:12)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: 'ECONNRESET'
+  },
+  status: 500,
+  statusText: undefined,
+  headers: undefined,
+  data: undefined,
+  body: undefined,
+  unhandled: true
+}
+
+> preview
+> node scripts/with-app-env.mjs vite preview
+
+
+ ╭────────── [Build Info] ─────────────╮
+ │                                     │
+ │  - Build Directory: .vercel/output  │
+ │  - Date: 10/19/2026, 5:31:30 AM     │
+ │  - Nitro Version: 3.0.260610-beta   │
+ │  - Nitro Preset: vercel             │
+ │                                     │
+ ╰─────────────────────────────────────╯
+
+  ➜  Local:   http://127.0.0.1:8081/
+
+> preview
+> node scripts/with-app-env.mjs vite preview
+
+
+ ╭────────── [Build Info] ─────────────╮
+ │                                     │
+ │  - Build Directory: .vercel/output  │
+ │  - Date: 10/19/2026, 5:53:14 AM     │
+ │  - Nitro Version: 3.0.260610-beta   │
+ │  - Nitro Preset: vercel             │
+ │                                     │
+ ╰─────────────────────────────────────╯
+
+  ➜  Local:   http://127.0.0.1:8081/
+hot-board 上游 403
+hot-board 上游 403
+Error: aborted
+    at abortIncoming (node:_http_server:838:17)
+    ... 3 lines matching cause stack trace ...
+    at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+  cause: Error: aborted
+      at abortIncoming (node:_http_server:838:17)
+      at socketOnClose (node:_http_server:832:3)
+      at Socket.emit (node:events:531:35)
+      at TCP.<anonymous> (node:net:347:12)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: 'ECONNRESET'
+  },
+  status: 500,
+  statusText: undefined,
+  headers: undefined,
+  data: undefined,
+  body: undefined,
+  unhandled: true
+}
+hot-board 上游 403
+hot-board 上游 403
+Error: aborted
+    at abortIncoming (node:_http_server:838:17)
+    ... 3 lines matching cause stack trace ...
+    at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+  cause: Error: aborted
+      at abortIncoming (node:_http_server:838:17)
+      at socketOnClose (node:_http_server:832:3)
+      at Socket.emit (node:events:531:35)
+      at TCP.<anonymous> (node:net:347:12)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: 'ECONNRESET'
+  },
+  status: 500,
+  statusText: undefined,
+  headers: undefined,
+  data: undefined,
+  body: undefined,
+  unhandled: true
+}
+hot-board 上游 403
+hot-board 上游 403
+
+> preview
+> node scripts/with-app-env.mjs vite preview
+
+
+ ╭────────── [Build Info] ─────────────╮
+ │                                     │
+ │  - Build Directory: .vercel/output  │
+ │  - Date: 10/19/2026, 6:32:08 AM     │
+ │  - Nitro Version: 3.0.260610-beta   │
+ │  - Nitro Preset: vercel             │
+ │                                     │
+ ╰─────────────────────────────────────╯
+
+  ➜  Local:   http://127.0.0.1:8081/
+hot-board 上游 403
+Error: aborted
+    at abortIncoming (node:_http_server:838:17)
+    ... 3 lines matching cause stack trace ...
+    at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+  cause: Error: aborted
+      at abortIncoming (node:_http_server:838:17)
+      at socketOnClose (node:_http_server:832:3)
+      at Socket.emit (node:events:531:35)
+      at TCP.<anonymous> (node:net:347:12)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: 'ECONNRESET'
+  },
+  status: 500,
+  statusText: undefined,
+  headers: undefined,
+  data: undefined,
+  body: undefined,
+  unhandled: true
+}
+hot-board 上游 403
+hot-board 上游 403
+Error: aborted
+    at abortIncoming (node:_http_server:838:17)
+    ... 3 lines matching cause stack trace ...
+    at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+  cause: Error: aborted
+      at abortIncoming (node:_http_server:838:17)
+      at socketOnClose (node:_http_server:832:3)
+      at Socket.emit (node:events:531:35)
+      at TCP.<anonymous> (node:net:347:12)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: 'ECONNRESET'
+  },
+  status: 500,
+  statusText: undefined,
+  headers: undefined,
+  data: undefined,
+  body: undefined,
+  unhandled: true
+}
+hot-board 上游 403
+hot-board 上游 403
+Error: aborted
+    at abortIncoming (node:_http_server:838:17)
+    ... 3 lines matching cause stack trace ...
+    at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+  cause: Error: aborted
+      at abortIncoming (node:_http_server:838:17)
+      at socketOnClose (node:_http_server:832:3)
+      at Socket.emit (node:events:531:35)
+      at TCP.<anonymous> (node:net:347:12)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: 'ECONNRESET'
+  },
+  status: 500,
+  statusText: undefined,
+  headers: undefined,
+  data: undefined,
+  body: undefined,
+  unhandled: true
+}
+hot-board 上游 403
+hot-board 上游 403
+hot-board 上游 403
+Error: aborted
+    at abortIncoming (node:_http_server:838:17)
+    ... 3 lines matching cause stack trace ...
+    at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+  cause: Error: aborted
+      at abortIncoming (node:_http_server:838:17)
+      at socketOnClose (node:_http_server:832:3)
+      at Socket.emit (node:events:531:35)
+      at TCP.<anonymous> (node:net:347:12)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: 'ECONNRESET'
+  },
+  status: 500,
+  statusText: undefined,
+  headers: undefined,
+  data: undefined,
+  body: undefined,
+  unhandled: true
+}
+hot-board 上游 403
+hot-board 上游 403
+
+> preview
+> node scripts/with-app-env.mjs vite preview
+
+
+ ╭────────── [Build Info] ─────────────╮
+ │                                     │
+ │  - Build Directory: .vercel/output  │
+ │  - Date: 10/19/2026, 7:14:30 AM     │
+ │  - Nitro Version: 3.0.260610-beta   │
+ │  - Nitro Preset: vercel             │
+ │                                     │
+ ╰─────────────────────────────────────╯
+
+  ➜  Local:   http://127.0.0.1:8081/
+hot-board 上游 403
+Error: aborted
+    at abortIncoming (node:_http_server:838:17)
+    ... 3 lines matching cause stack trace ...
+    at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+  cause: Error: aborted
+      at abortIncoming (node:_http_server:838:17)
+      at socketOnClose (node:_http_server:832:3)
+      at Socket.emit (node:events:531:35)
+      at TCP.<anonymous> (node:net:347:12)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: 'ECONNRESET'
+  },
+  status: 500,
+  statusText: undefined,
+  headers: undefined,
+  data: undefined,
+  body: undefined,
+  unhandled: true
+}
+hot-board 上游 403
+hot-board 上游 403
+hot-board 上游 403
+Error: aborted
+    at abortIncoming (node:_http_server:838:17)
+    ... 3 lines matching cause stack trace ...
+    at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+  cause: Error: aborted
+      at abortIncoming (node:_http_server:838:17)
+      at socketOnClose (node:_http_server:832:3)
+      at Socket.emit (node:events:531:35)
+      at TCP.<anonymous> (node:net:347:12)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: 'ECONNRESET'
+  },
+  status: 500,
+  statusText: undefined,
+  headers: undefined,
+  data: undefined,
+  body: undefined,
+  unhandled: true
+}
+hot-board 上游 403
+hot-board 上游 403
+Error: aborted
+    at abortIncoming (node:_http_server:838:17)
+    ... 3 lines matching cause stack trace ...
+    at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+  cause: Error: aborted
+      at abortIncoming (node:_http_server:838:17)
+      at socketOnClose (node:_http_server:832:3)
+      at Socket.emit (node:events:531:35)
+      at TCP.<anonymous> (node:net:347:12)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: 'ECONNRESET'
+  },
+  status: 500,
+  statusText: undefined,
+  headers: undefined,
+  data: undefined,
+  body: undefined,
+  unhandled: true
+}
+
+> preview
+> node scripts/with-app-env.mjs vite preview
+
+
+ ╭────────── [Build Info] ─────────────╮
+ │                                     │
+ │  - Build Directory: .vercel/output  │
+ │  - Date: 10/19/2026, 7:24:17 AM     │
+ │  - Nitro Version: 3.0.260610-beta   │
+ │  - Nitro Preset: vercel             │
+ │                                     │
+ ╰─────────────────────────────────────╯
+
+  ➜  Local:   http://127.0.0.1:8081/
+hot-board 上游 403
+Error: aborted
+    at abortIncoming (node:_http_server:838:17)
+    ... 3 lines matching cause stack trace ...
+    at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+  cause: Error: aborted
+      at abortIncoming (node:_http_server:838:17)
+      at socketOnClose (node:_http_server:832:3)
+      at Socket.emit (node:events:531:35)
+      at TCP.<anonymous> (node:net:347:12)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: 'ECONNRESET'
+  },
+  status: 500,
+  statusText: undefined,
+  headers: undefined,
+  data: undefined,
+  body: undefined,
+  unhandled: true
+}
+hot-board 上游 403
+hot-board 上游 403
+Error: aborted
+    at abortIncoming (node:_http_server:838:17)
+    ... 3 lines matching cause stack trace ...
+    at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+  cause: Error: aborted
+      at abortIncoming (node:_http_server:838:17)
+      at socketOnClose (node:_http_server:832:3)
+      at Socket.emit (node:events:531:35)
+      at TCP.<anonymous> (node:net:347:12)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: 'ECONNRESET'
+  },
+  status: 500,
+  statusText: undefined,
+  headers: undefined,
+  data: undefined,
+  body: undefined,
+  unhandled: true
+}
+hot-board 上游 403
+hot-board 上游 403
+hot-board 上游 403
+
+> preview
+> node scripts/with-app-env.mjs vite preview
+
+
+ ╭────────── [Build Info] ─────────────╮
+ │                                     │
+ │  - Build Directory: .vercel/output  │
+ │  - Date: 10/19/2026, 7:39:57 AM     │
+ │  - Nitro Version: 3.0.260610-beta   │
+ │  - Nitro Preset: vercel             │
+ │                                     │
+ ╰─────────────────────────────────────╯
+
+  ➜  Local:   http://127.0.0.1:8081/
+Error: aborted
+    at abortIncoming (node:_http_server:838:17)
+    ... 3 lines matching cause stack trace ...
+    at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+  cause: Error: aborted
+      at abortIncoming (node:_http_server:838:17)
+      at socketOnClose (node:_http_server:832:3)
+      at Socket.emit (node:events:531:35)
+      at TCP.<anonymous> (node:net:347:12)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: 'ECONNRESET'
+  },
+  status: 500,
+  statusText: undefined,
+  headers: undefined,
+  data: undefined,
+  body: undefined,
+  unhandled: true
+}
+Error: aborted
+    at abortIncoming (node:_http_server:838:17)
+    ... 3 lines matching cause stack trace ...
+    at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+  cause: Error: aborted
+      at abortIncoming (node:_http_server:838:17)
+      at socketOnClose (node:_http_server:832:3)
+      at Socket.emit (node:events:531:35)
+      at TCP.<anonymous> (node:net:347:12)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: 'ECONNRESET'
+  },
+  status: 500,
+  statusText: undefined,
+  headers: undefined,
+  data: undefined,
+  body: undefined,
+  unhandled: true
+}
+Error: aborted
+    at abortIncoming (node:_http_server:838:17)
+    ... 3 lines matching cause stack trace ...
+    at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+  cause: Error: aborted
+      at abortIncoming (node:_http_server:838:17)
+      at socketOnClose (node:_http_server:832:3)
+      at Socket.emit (node:events:531:35)
+      at TCP.<anonymous> (node:net:347:12)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: 'ECONNRESET'
+  },
+  status: 500,
+  statusText: undefined,
+  headers: undefined,
+  data: undefined,
+  body: undefined,
+  unhandled: true
+}
+kline sh000300 fetch failed
+
+> preview
+> node scripts/with-app-env.mjs vite preview
+
+
+ ╭────────── [Build Info] ─────────────╮
+ │                                     │
+ │  - Build Directory: .vercel/output  │
+ │  - Date: 10/19/2026, 8:58:23 AM     │
+ │  - Nitro Version: 3.0.260610-beta   │
+ │  - Nitro Preset: vercel             │
+ │                                     │
+ ╰─────────────────────────────────────╯
+
+  ➜  Local:   http://127.0.0.1:8081/
+Error: aborted
+    at abortIncoming (node:_http_server:838:17)
+    ... 3 lines matching cause stack trace ...
+    at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+  cause: Error: aborted
+      at abortIncoming (node:_http_server:838:17)
+      at socketOnClose (node:_http_server:832:3)
+      at Socket.emit (node:events:531:35)
+      at TCP.<anonymous> (node:net:347:12)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: 'ECONNRESET'
+  },
+  status: 500,
+  statusText: undefined,
+  headers: undefined,
+  data: undefined,
+  body: undefined,
+  unhandled: true
+}
+Error: aborted
+    at abortIncoming (node:_http_server:838:17)
+    ... 3 lines matching cause stack trace ...
+    at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+  cause: Error: aborted
+      at abortIncoming (node:_http_server:838:17)
+      at socketOnClose (node:_http_server:832:3)
+      at Socket.emit (node:events:531:35)
+      at TCP.<anonymous> (node:net:347:12)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: 'ECONNRESET'
+  },
+  status: 500,
+  statusText: undefined,
+  headers: undefined,
+  data: undefined,
+  body: undefined,
+  unhandled: true
+}
+Error: aborted
+    at abortIncoming (node:_http_server:838:17)
+    ... 3 lines matching cause stack trace ...
+    at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+  cause: Error: aborted
+      at abortIncoming (node:_http_server:838:17)
+      at socketOnClose (node:_http_server:832:3)
+      at Socket.emit (node:events:531:35)
+      at TCP.<anonymous> (node:net:347:12)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: 'ECONNRESET'
+  },
+  status: 500,
+  statusText: undefined,
+  headers: undefined,
+  data: undefined,
+  body: undefined,
+  unhandled: true
+}

@@ -1,0 +1,38 @@
+{
+  "url": "http://127.0.0.1:8081/",
+  "viewports": {
+    "desktop": {
+      "width": 1280,
+      "height": 800,
+      "status": 200,
+      "title": "鳄鱼派量化系统",
+      "hasCanvas": false,
+      "bodyTextLen": 1469,
+      "bodyTextHash": "89157942a9c3b1770ba69834aed9f894cdec7d99e9b03a235e00f20d65a61301",
+      "bodyTextPrefix": "鳄 鳄鱼派量化系统 V9.3 概览 风险与仓位 情绪与轮动 明细 点位 · 仓位 · 风险管理 三位一体 | 守株待兔 · 买预",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-built.png"
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "status": 200,
+      "title": "鳄鱼派量化系统",
+      "hasCanvas": false,
+      "bodyTextLen": 1433,
+      "bodyTextHash": "eaeccf1a79d42a470deb91aab14b460eb62f4d2756b409ca5b8bfc5fe4ad2e28",
+      "bodyTextPrefix": "鳄 鳄鱼派量化系统 V9.3 概览 风险与仓位 情绪与轮动 明细 交易 研究 系统 体系 2025年 2026年 01月 02月",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-built-mobile.png"
+    }
+  },
+  "brandWarnings": [],
+  "authWarnings": [],
+  "verdictFile": "/workspace/screenshots/app-builder-built.json",
+  "divergesFromBaseline": false,
+  "baselineReasons": []
+}

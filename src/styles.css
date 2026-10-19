@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "WenQuanYi Zen Hei", "PingFang SC", "Noto Sans SC", sans-serif;
+  --font-serif: "Liberation Serif", "Songti SC", "Noto Serif SC", serif;
+  --font-mono: "Liberation Mono", "WenQuanYi Zen Hei Mono", ui-monospace, monospace;
+
+  --color-ink: #100e0c;
+  --color-panel: #191714;
+  --color-panel-2: #24211c;
+  --color-paper: #f3efe6;
+  --color-muted: #a39b90;
+  --color-faint: #746c62;
+  --color-line: #3a342c;
+  --color-seal: #c4523a;
+  --color-header: #a61d18;
+  --color-amber: #d6b15e;
+  --color-steel: #8aa0b4;
+  --color-up: #d25a42;
+  --color-down: #3f8f72;
+  --color-warn: #a69078;
+
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+}
+
+@layer base {
+  html,
+  body {
+    background: var(--color-ink);
+    color: var(--color-paper);
+  }
+  body {
+    font-family: var(--font-sans);
+    min-height: 100vh;
+    text-rendering: optimizeLegibility;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  ::selection {
+    background: color-mix(in oklab, var(--color-seal) 55%, transparent);
+    color: var(--color-paper);
+  }
+}
+
+@layer components {
+  .num {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.03em;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
