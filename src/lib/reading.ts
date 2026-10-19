@@ -467,6 +467,16 @@ function readForce(
   };
 }
 
+export function coreQuotesReady(
+  sh: { price: number | null; date: string },
+  hs300: { price: number | null; date: string },
+  cyb: { price: number | null; date: string },
+): boolean {
+  if (sh.price == null || hs300.price == null || cyb.price == null) return false;
+  const days = [sh.date, hs300.date, cyb.date].map((value) => (value || "").slice(0, 10));
+  return days.every((day) => day.length > 0 && day === days[0]);
+}
+
 export function readMarket(desk: Desk): Reading {
   const { sh, cyb, hs300, emotion, ladder, brokers, margin, indicators } = desk;
   const weeks = weeklyReturns(desk.shSeries.length > 0 ? desk.shSeries : desk.series);
@@ -601,7 +611,7 @@ export function readMarket(desk: Desk): Reading {
 
   const metCount = checks.filter((item) => item.met).length;
   const limitsKnown = emotion != null && emotion.limitDown != null && emotion.limitUp != null;
-  const quotesKnown = sh.price != null && hs300.price != null && cyb.price != null;
+  const quotesKnown = coreQuotesReady(sh, hs300, cyb);
   const decisionReady = Boolean(emotion) && limitsKnown && quotesKnown;
   let headline = "数字不齐，先不把今天说死。";
   if (panic) {

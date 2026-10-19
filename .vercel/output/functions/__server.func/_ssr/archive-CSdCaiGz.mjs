@@ -1,10 +1,26 @@
 import { i as __toESM } from "../_runtime.mjs";
 import { C as require_jsx_runtime, X as require_react } from "../_libs/@tanstack/react-router+[...].mjs";
-import { a as cn, o as getArchive, r as Route$2 } from "./router-Crg4Xc9z.mjs";
+import { a as cn, o as getArchive, r as Route$2 } from "./router-Bo-45WFN.mjs";
 import { i as fmtDay } from "./format-DEwBcFer.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/archive-hmRcHFmp.js
+//#region node_modules/.nitro/vite/services/ssr/assets/archive-CSdCaiGz.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
+function archiveQueryReady(loaded, current, pending) {
+	return !pending && loaded.q === current.q && loaded.source === current.source;
+}
+function planArchivePage(input) {
+	if (!archiveQueryReady(input.loaded, input.current, input.pending)) return {
+		offset: 0,
+		allowed: false
+	};
+	return {
+		offset: input.loadedCount,
+		allowed: true
+	};
+}
+function applyArchivePage(items, offset, page) {
+	return offset === 0 ? page : [...items, ...page];
+}
 var TABS = [
 	{
 		id: "all",
@@ -27,7 +43,13 @@ function ArchiveView({ initial }) {
 	const [q, setQ] = (0, import_react.useState)("");
 	const [source, setSource] = (0, import_react.useState)("all");
 	const [offset, setOffset] = (0, import_react.useState)(0);
+	const [attempt, setAttempt] = (0, import_react.useState)(0);
 	const [items, setItems] = (0, import_react.useState)(initial.items);
+	const [loaded, setLoaded] = (0, import_react.useState)({
+		q: "",
+		source: "all",
+		count: initial.items.length
+	});
 	const [matched, setMatched] = (0, import_react.useState)(initial.matched);
 	const [hasMore, setHasMore] = (0, import_react.useState)(initial.hasMore);
 	const [counts, setCounts] = (0, import_react.useState)(initial.counts);
@@ -35,31 +57,45 @@ function ArchiveView({ initial }) {
 	const [pending, setPending] = (0, import_react.useState)(false);
 	const [error, setError] = (0, import_react.useState)(null);
 	const first = (0, import_react.useRef)(true);
+	const requestSeq = (0, import_react.useRef)(0);
 	(0, import_react.useEffect)(() => {
 		if (first.current) {
 			first.current = false;
 			return;
 		}
+		const token = requestSeq.current + 1;
+		requestSeq.current = token;
+		const query = {
+			q,
+			source
+		};
+		const pageOffset = offset;
 		let alive = true;
 		const timer = window.setTimeout(() => {
 			setPending(true);
+			setError(null);
 			getArchive({ data: {
 				q,
 				source,
 				limit: 24,
-				offset
+				offset: pageOffset
 			} }).then((next) => {
-				if (!alive) return;
-				setItems((prev) => offset === 0 ? next.items : [...prev, ...next.items]);
+				if (!alive || requestSeq.current !== token) return;
+				setItems((prev) => applyArchivePage(prev, pageOffset, next.items));
+				setLoaded({
+					q: query.q,
+					source: query.source,
+					count: pageOffset + next.items.length
+				});
 				setMatched(next.matched);
 				setHasMore(next.hasMore);
 				setCounts(next.counts);
 				setWarning(next.warning);
 				setError(null);
 			}).catch(() => {
-				if (alive) setError("检索没有成功");
+				if (alive && requestSeq.current === token) setError("检索没有成功");
 			}).finally(() => {
-				if (alive) setPending(false);
+				if (alive && requestSeq.current === token) setPending(false);
 			});
 		}, 220);
 		return () => {
@@ -69,8 +105,25 @@ function ArchiveView({ initial }) {
 	}, [
 		q,
 		source,
-		offset
+		offset,
+		attempt
 	]);
+	const current = {
+		q,
+		source
+	};
+	const canMore = archiveQueryReady(loaded, current, pending) && hasMore;
+	function more() {
+		const plan = planArchivePage({
+			current,
+			loaded,
+			loadedCount: loaded.count,
+			pending
+		});
+		if (!plan.allowed || !hasMore) return;
+		setOffset(plan.offset);
+		setAttempt((value) => value + 1);
+	}
 	const countLabel = source === "review" ? counts.review : source === "intel" ? counts.intel : source === "report" ? counts.report : counts.all;
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 		className: "space-y-4",
@@ -169,9 +222,9 @@ function ArchiveView({ initial }) {
 					]
 				}) }, item.link))
 			}),
-			hasMore ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+			canMore ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
 				type: "button",
-				onClick: () => setOffset(items.length),
+				onClick: more,
 				className: "h-11 w-full rounded-lg border border-line text-sm text-muted",
 				children: "再显示一些"
 			}) : null,

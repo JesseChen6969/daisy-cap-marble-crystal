@@ -2,10 +2,10 @@ import { i as __toESM } from "../_runtime.mjs";
 import { C as require_jsx_runtime, X as require_react, b as Link, x as useNavigate } from "../_libs/@tanstack/react-router+[...].mjs";
 import { a as shanghaiParts, c as toneOf$1, i as marketPhase, n as ZONE_ORDER, o as toneClass, t as INDICATORS } from "./zones-B6a6YmcZ.mjs";
 import { i as RefreshCw, n as Settings } from "../_libs/lucide-react.mjs";
-import { a as cn, c as getDayBasket, i as Route$3, l as getDayBrief, u as getDesk } from "./router-Crg4Xc9z.mjs";
+import { a as cn, c as getDayBasket, i as Route$3, l as getDayBrief, u as getDesk } from "./router-Bo-45WFN.mjs";
 import { a as fmtPct, n as fmt, o as fmtSigned, t as dirClass } from "./format-DEwBcFer.mjs";
 import { a as Line, c as Radar, d as PolarGrid, f as ResponsiveContainer, i as XAxis, l as PolarAngleAxis, n as RadarChart, o as CartesianGrid, p as Tooltip, r as YAxis, s as Bar, t as ComposedChart, u as PolarRadiusAxis } from "../_libs/recharts+[...].mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-ARA6xmDO.js
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-zhoV8Y3H.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var LINE = 3800;
@@ -348,6 +348,15 @@ function readForce(ladder, hs300Pct, shPct, cybPct, volumeHot) {
 		note: "指数彼此差不多，看不出是在拉权重，还是市场自己在磨。"
 	};
 }
+function coreQuotesReady(sh, hs300, cyb) {
+	if (sh.price == null || hs300.price == null || cyb.price == null) return false;
+	const days = [
+		sh.date,
+		hs300.date,
+		cyb.date
+	].map((value) => (value || "").slice(0, 10));
+	return days.every((day) => day.length > 0 && day === days[0]);
+}
 function readMarket(desk) {
 	const { sh, cyb, hs300, emotion, ladder, brokers, margin, indicators } = desk;
 	const weeks = weeklyReturns(desk.shSeries.length > 0 ? desk.shSeries : desk.series);
@@ -461,7 +470,7 @@ function readMarket(desk) {
 	];
 	const metCount = checks.filter((item) => item.met).length;
 	const limitsKnown = emotion != null && emotion.limitDown != null && emotion.limitUp != null;
-	const quotesKnown = sh.price != null && hs300.price != null && cyb.price != null;
+	const quotesKnown = coreQuotesReady(sh, hs300, cyb);
 	const decisionReady = Boolean(emotion) && limitsKnown && quotesKnown;
 	let headline = "数字不齐，先不把今天说死。";
 	if (panic) headline = "跌停还堆着，恐慌没过去。这个位置谈市场底太早。";
@@ -618,7 +627,7 @@ function scoreDesk(desk) {
 	const down = emotion?.down ?? 0;
 	const known = emotion != null && up + down > 0;
 	const limitsKnown = emotion != null && emotion.limitUp != null && emotion.limitDown != null;
-	const quotesKnown = sh.price != null && hs300.price != null && cyb.price != null;
+	const quotesKnown = coreQuotesReady(sh, hs300, cyb);
 	const limitDown = emotion?.limitDown ?? null;
 	const limitUp = emotion?.limitUp ?? null;
 	const ratio = known ? up / (up + down) : 0;
@@ -857,7 +866,8 @@ function scoreDesk(desk) {
 	let positionNote = "关键涨跌或跌停没有取到，暂不可判断";
 	const risk = !limitsKnown ? "unknown" : panic ? "triggered" : "clear";
 	if (!known || !limitsKnown) positionNote = "关键涨跌或跌停没有取到，暂不可判断";
-	else if (!quotesKnown) positionNote = "上证、沪深300或创业板没有行情，暂不可判断";
+	else if (sh.price == null || hs300.price == null || cyb.price == null) positionNote = "上证、沪深300或创业板没有行情，暂不可判断";
+	else if (!quotesKnown) positionNote = "上证、沪深300、创业板不是同一天，暂不可判断";
 	else if (panic) {
 		longPct = 0;
 		shortPct = 0;
@@ -924,6 +934,33 @@ function scoreDesk(desk) {
 		limitUp,
 		headline: reading.headline
 	};
+}
+function openDayFlight(flight, day, nextToken) {
+	if (flight?.day === day) return {
+		flight,
+		token: null
+	};
+	return {
+		flight: {
+			day,
+			token: nextToken
+		},
+		token: nextToken
+	};
+}
+function takeDayFlight(flight, token, day, selected) {
+	if (!flight || flight.token !== token || flight.day !== day || selected !== day) return {
+		flight,
+		accept: false
+	};
+	return {
+		flight: null,
+		accept: true
+	};
+}
+function shownCount(primary, backup) {
+	const value = primary ?? backup ?? null;
+	return value == null ? "—" : String(value);
 }
 function preferCount(primary, backup) {
 	return primary ?? backup ?? null;
@@ -1196,21 +1233,27 @@ function TerminalView({ data, tab, day, pulse = 0, pending, error, onRefresh, on
 	const historical = view.historical;
 	const briefFlight = (0, import_react.useRef)(null);
 	const basketFlight = (0, import_react.useRef)(null);
+	const flightSeq = (0, import_react.useRef)(0);
 	const selectedRef = (0, import_react.useRef)(selected);
 	selectedRef.current = selected;
 	(0, import_react.useEffect)(() => {
 		if (!selected) return;
 		const day = selected;
 		setBrief((prev) => prev?.day === day ? prev : null);
-		if (briefFlight.current === day) return;
-		briefFlight.current = day;
+		const opened = openDayFlight(briefFlight.current, day, flightSeq.current + 1);
+		briefFlight.current = opened.flight;
+		if (opened.token == null) return;
+		flightSeq.current = opened.token;
+		const token = opened.token;
 		getDayBrief({ data: { day } }).then((note) => {
-			if (briefFlight.current === day) briefFlight.current = null;
-			if (selectedRef.current !== day) return;
+			const taken = takeDayFlight(briefFlight.current, token, day, selectedRef.current);
+			briefFlight.current = taken.flight;
+			if (!taken.accept) return;
 			setBrief(note);
 		}).catch(() => {
-			if (briefFlight.current === day) briefFlight.current = null;
-			if (selectedRef.current !== day) return;
+			const taken = takeDayFlight(briefFlight.current, token, day, selectedRef.current);
+			briefFlight.current = taken.flight;
+			if (!taken.accept) return;
 			setBrief((prev) => prev?.day === day ? prev : {
 				day,
 				author: null,
@@ -1226,17 +1269,22 @@ function TerminalView({ data, tab, day, pulse = 0, pending, error, onRefresh, on
 		const day = selected;
 		setBasket((prev) => prev?.day === day ? prev : null);
 		setBasketDay((prev) => prev === day ? prev : null);
-		if (basketFlight.current === day) return;
 		if (basket?.day === day) return;
-		basketFlight.current = day;
+		const opened = openDayFlight(basketFlight.current, day, flightSeq.current + 1);
+		basketFlight.current = opened.flight;
+		if (opened.token == null) return;
+		flightSeq.current = opened.token;
+		const token = opened.token;
 		getDayBasket({ data: { day } }).then((row) => {
-			if (basketFlight.current === day) basketFlight.current = null;
-			if (selectedRef.current !== day) return;
+			const taken = takeDayFlight(basketFlight.current, token, day, selectedRef.current);
+			basketFlight.current = taken.flight;
+			if (!taken.accept) return;
 			setBasket(row);
 			setBasketDay(day);
 		}).catch(() => {
-			if (basketFlight.current === day) basketFlight.current = null;
-			if (selectedRef.current !== day) return;
+			const taken = takeDayFlight(basketFlight.current, token, day, selectedRef.current);
+			basketFlight.current = taken.flight;
+			if (!taken.accept) return;
 			setBasketDay(day);
 		});
 	}, [
@@ -2319,16 +2367,16 @@ function Mood({ data, card, stats, boards, ready }) {
 					}),
 					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Row, {
 						k: "涨停",
-						v: stats ? String(stats.limitUp) : String(data.emotion?.limitUp ?? "—"),
+						v: shownCount(stats?.limitUp, data.emotion?.limitUp),
 						hot: true
 					}),
 					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Row, {
 						k: "跌停",
-						v: stats ? String(stats.limitDown) : String(data.emotion?.limitDown ?? "—")
+						v: shownCount(stats?.limitDown, data.emotion?.limitDown)
 					}),
 					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Row, {
 						k: "涨跌情绪",
-						v: data.emotion ? card.mood == null ? "—" : `${card.mood.toFixed(1)} · ${card.moodWord}` : stats ? `涨停 ${stats.limitUp} / 跌停 ${stats.limitDown}` : "没有这一天的涨跌家数"
+						v: data.emotion ? card.mood == null ? "—" : `${card.mood.toFixed(1)} · ${card.moodWord}` : stats ? `涨停 ${shownCount(stats.limitUp, null)} / 跌停 ${shownCount(stats.limitDown, null)}` : "没有这一天的涨跌家数"
 					})
 				]
 			}),

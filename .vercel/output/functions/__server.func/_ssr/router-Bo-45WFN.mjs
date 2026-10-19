@@ -46,7 +46,7 @@ var getArchive = createServerFn({ method: "GET" }).validator((input) => {
 	};
 }).handler(createSsrRpc("036137cac849e54bc853cabc089824e88b3876ea1cd5d1cb988b1e0504be5a53"));
 //#endregion
-//#region node_modules/.nitro/vite/services/ssr/assets/router-Crg4Xc9z.js
+//#region node_modules/.nitro/vite/services/ssr/assets/router-Bo-45WFN.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var __defProp = Object.defineProperty;
@@ -552,7 +552,7 @@ function parseDeskDay(value) {
 	if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return void 0;
 	return value;
 }
-var $$splitComponentImporter$3 = () => import("./routes-ARA6xmDO.mjs");
+var $$splitComponentImporter$3 = () => import("./routes-zhoV8Y3H.mjs");
 var Route$3 = createFileRoute("/")({
 	validateSearch: (search) => ({
 		tab: parseDeskTab(search.tab),
@@ -563,7 +563,7 @@ var Route$3 = createFileRoute("/")({
 	head: () => ({ meta: [{ title: "鳄鱼派量化系统" }] }),
 	component: lazyRouteComponent($$splitComponentImporter$3, "component")
 });
-var $$splitComponentImporter$2 = () => import("./archive-hmRcHFmp.mjs");
+var $$splitComponentImporter$2 = () => import("./archive-CSdCaiGz.mjs");
 var Route$2 = createFileRoute("/archive")({
 	loader: () => getArchive({ data: {
 		q: "",
@@ -573,7 +573,7 @@ var Route$2 = createFileRoute("/archive")({
 	head: () => ({ meta: [{ title: "档案 · 鳄鱼派看盘" }] }),
 	component: lazyRouteComponent($$splitComponentImporter$2, "component")
 });
-var $$splitComponentImporter$1 = () => import("./breadth-j7MsttLL.mjs");
+var $$splitComponentImporter$1 = () => import("./breadth-CnYvQWsa.mjs");
 var Route$1 = createFileRoute("/breadth")({
 	loader: () => getBreadth(),
 	head: () => ({ meta: [{ title: "涨跌 · 鳄鱼派看盘" }] }),

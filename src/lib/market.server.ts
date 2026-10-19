@@ -531,25 +531,45 @@ async function loadHotBoardOnce(): Promise<Desk["boardLead"]> {
   return { name: top.name, pct: top.pct, share: pos > 0 ? (top.pct / pos) * 100 : 0 };
 }
 
+export function readEmotionPayload(json: {
+  data?: { qdate?: unknown; fenbu?: Array<Record<string, unknown>> } | null;
+}): Emotion | null {
+  const fenbu = json.data?.fenbu;
+  if (!fenbu?.length) return null;
+  const buckets = new Map<string, number | null>();
+  for (const item of fenbu) {
+    for (const [key, raw] of Object.entries(item)) buckets.set(key, countNum(raw));
+  }
+  let up = 0;
+  let down = 0;
+  for (const [key, count] of buckets) {
+    if (count == null) continue;
+    const band = Number(key);
+    if (band > 0) up += count;
+    else if (band < 0) down += count;
+  }
+  if (up + down <= 0) return null;
+  const raw = String(json.data?.qdate ?? "");
+  const date = /^\d{8}$/.test(raw) ? `${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6)}` : raw;
+  if (!date) return null;
+  const flat = buckets.get("0");
+  return {
+    date,
+    up,
+    down,
+    flat: flat ?? 0,
+    limitUp: buckets.has("11") ? (buckets.get("11") ?? null) : null,
+    limitDown: buckets.has("-11") ? (buckets.get("-11") ?? null) : null,
+  };
+}
+
 async function loadEmotion(): Promise<Emotion | null> {
   const buf = await fetchBuffer(
     "https://push2ex.eastmoney.com/getTopicZDFenBu?ut=7eea3edcaed734bea9cbfc24409ed989&dpt=wz.ztzt",
     "https://quote.eastmoney.com/",
   );
-  const json = JSON.parse(decode(buf, "utf-8")) as {
-    data?: { qdate?: number; fenbu?: Array<Record<string, number>> } | null;
-  };
-  if (!json.data?.fenbu?.length) return null;
-  const buckets: Record<string, number> = {};
-  for (const item of json.data.fenbu) Object.assign(buckets, item);
-  const value = (key: string) => buckets[key] ?? 0;
-  const up = Object.entries(buckets).reduce((sum, [key, count]) => (Number(key) > 0 ? sum + count : sum), 0);
-  const down = Object.entries(buckets).reduce((sum, [key, count]) => (Number(key) < 0 ? sum + count : sum), 0);
-  if (up + down <= 0) return null;
-  const raw = String(json.data.qdate ?? "");
-  const date = raw.length === 8 ? `${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6)}` : raw;
-  if (!date) return null;
-  return { date, up, down, flat: value("0"), limitUp: value("11"), limitDown: value("-11") };
+  const json = JSON.parse(decode(buf, "utf-8")) as Parameters<typeof readEmotionPayload>[0];
+  return readEmotionPayload(json);
 }
 
 async function loadMargin(): Promise<MarginDay[]> {

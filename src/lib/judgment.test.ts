@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { ArchiveItem, Desk, Emotion, Quote, TapePoint } from "./market.types.ts";
-import { countNum, decodeXml, finiteNum, selectArchive, unescapeHtml } from "./market.server.ts";
-import { carryWarnings, preferCount } from "./replay.ts";
-import { readMarket } from "./reading.ts";
+import { applyArchivePage, planArchivePage } from "./archive-query.ts";
+import { countNum, decodeXml, finiteNum, readEmotionPayload, selectArchive, unescapeHtml } from "./market.server.ts";
+import { carryWarnings, openDayFlight, preferCount, shownCount, takeDayFlight, type DayFlight } from "./replay.ts";
+import { coreQuotesReady, readMarket } from "./reading.ts";
 import { paceVolume, scoreDesk } from "./scorecard.ts";
 
 function quote(code: string, name: string, price: number, pct: number, date: string): Quote {
@@ -277,5 +278,104 @@ describe("warnings and pages", () => {
     const last = selectArchive([], rss, { q: "", source: "all", limit: 24, offset: 24 });
     assert.equal(last.items.length, 6);
     assert.equal(last.hasMore, false);
+  });
+});
+
+function fenbu(limitDown: number | null) {
+  return readEmotionPayload({
+    data: {
+      qdate: 20261019,
+      fenbu: [{ "1": 800 }, { "-1": 2500 }, { "0": 40 }, { "11": 20 }, { "-11": limitDown }],
+    },
+  });
+}
+
+describe("live emotion buckets", () => {
+  it("keeps an explicit null limit-down unknown on the live parser", () => {
+    const healthy = fenbu(50);
+    const blank = fenbu(null);
+    assert.equal(healthy?.limitDown, 50);
+    assert.equal(blank?.limitDown, null);
+    assert.notEqual(blank?.limitDown, 0);
+    const kept = scoreDesk(desk([point("2026-10-19", -1.2)], healthy));
+    const open = scoreDesk(desk([point("2026-10-19", -1.2)], blank));
+    assert.equal(kept.band, "回避");
+    assert.equal(kept.longPct, 0);
+    assert.equal(open.longPct, null);
+    assert.equal(open.risk, "unknown");
+    assert.equal(shownCount(null, blank?.limitDown), "—");
+    assert.equal(shownCount(null, 50), "50");
+  });
+});
+
+describe("request identity", () => {
+  it("does not let an older reply for the same day replace a newer one", () => {
+    let flight: DayFlight = null;
+    let seq = 0;
+    let selected = "A";
+    let shown = "";
+    const start = (day: string) => {
+      selected = day;
+      const opened = openDayFlight(flight, day, seq + 1);
+      flight = opened.flight;
+      if (opened.token != null) seq = opened.token;
+      return opened.token;
+    };
+    const land = (token: number | null, day: string, payload: string) => {
+      if (token == null) return;
+      const taken = takeDayFlight(flight, token, day, selected);
+      flight = taken.flight;
+      if (taken.accept) shown = payload;
+    };
+    const first = start("A");
+    assert.equal(start("A"), null);
+    start("B");
+    const second = start("A");
+    land(second, "A", "full");
+    land(first, "A", "partial");
+    assert.equal(shown, "full");
+  });
+});
+
+describe("archive paging", () => {
+  it("refuses to page a new query from the previous list, and allows the same offset to be retried", () => {
+    const loaded = { q: "", source: "all" };
+    const blocked = planArchivePage({
+      current: { q: "陶瓷", source: "all" },
+      loaded,
+      loadedCount: 24,
+      pending: false,
+    });
+    assert.equal(blocked.allowed, false);
+    assert.deepEqual(applyArchivePage(["旧 1"], 0, ["新 1"]), ["新 1"]);
+    const next = planArchivePage({ current: loaded, loaded, loadedCount: 24, pending: false });
+    assert.equal(next.allowed, true);
+    assert.equal(next.offset, 24);
+    const retry = planArchivePage({ current: loaded, loaded, loadedCount: 24, pending: false });
+    assert.equal(retry.allowed, true);
+    assert.equal(retry.offset, 24);
+  });
+});
+
+describe("quote dates", () => {
+  it("does not size a position when the core indexes are from different days", () => {
+    const emotion = {
+      date: "2026-10-19",
+      up: 3200,
+      down: 1500,
+      flat: 80,
+      limitUp: 40,
+      limitDown: 8,
+    };
+    const aligned = desk([point("2026-10-19", 0.4)], emotion);
+    const split = desk([point("2026-10-19", 0.4)], emotion);
+    split.hs300 = { ...split.hs300, date: "2026-10-16" };
+    assert.equal(coreQuotesReady(aligned.sh, aligned.hs300, aligned.cyb), true);
+    assert.equal(coreQuotesReady(split.sh, split.hs300, split.cyb), false);
+    assert.notEqual(scoreDesk(aligned).longPct, null);
+    const card = scoreDesk(split);
+    assert.equal(card.longPct, null);
+    assert.equal(card.band, "数据不足");
+    assert.match(card.positionNote, /同一天/);
   });
 });

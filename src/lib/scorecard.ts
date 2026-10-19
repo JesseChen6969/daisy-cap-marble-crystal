@@ -1,6 +1,6 @@
 import { fmtPct } from "./format";
 import type { Desk, TapePoint } from "./market.types";
-import { readMarket } from "./reading";
+import { coreQuotesReady, readMarket } from "./reading";
 import { shanghaiParts } from "./zones";
 
 export const PATH_MODEL = "path-v1";
@@ -187,7 +187,7 @@ export function scoreDesk(desk: Desk): Scorecard {
   const down = emotion?.down ?? 0;
   const known = emotion != null && up + down > 0;
   const limitsKnown = emotion != null && emotion.limitUp != null && emotion.limitDown != null;
-  const quotesKnown = sh.price != null && hs300.price != null && cyb.price != null;
+  const quotesKnown = coreQuotesReady(sh, hs300, cyb);
   const limitDown = emotion?.limitDown ?? null;
   const limitUp = emotion?.limitUp ?? null;
   const ratio = known ? up / (up + down) : 0;
@@ -401,8 +401,10 @@ export function scoreDesk(desk: Desk): Scorecard {
   const risk: Scorecard["risk"] = !limitsKnown ? "unknown" : panic ? "triggered" : "clear";
   if (!known || !limitsKnown) {
     positionNote = "关键涨跌或跌停没有取到，暂不可判断";
-  } else if (!quotesKnown) {
+  } else if (sh.price == null || hs300.price == null || cyb.price == null) {
     positionNote = "上证、沪深300或创业板没有行情，暂不可判断";
+  } else if (!quotesKnown) {
+    positionNote = "上证、沪深300、创业板不是同一天，暂不可判断";
   } else if (panic) {
     longPct = 0;
     shortPct = 0;

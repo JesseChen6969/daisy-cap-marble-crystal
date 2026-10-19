@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { applyArchivePage, archiveQueryReady, planArchivePage } from "@/lib/archive-query";
 import { getArchive } from "@/lib/market.functions";
 import type { ArchivePayload, ArchiveSource } from "@/lib/market.types";
 import { cn } from "@/lib/cn";
@@ -15,7 +16,9 @@ export function ArchiveView({ initial }: { initial: ArchivePayload }) {
   const [q, setQ] = useState("");
   const [source, setSource] = useState<ArchiveSource>("all");
   const [offset, setOffset] = useState(0);
+  const [attempt, setAttempt] = useState(0);
   const [items, setItems] = useState(initial.items);
+  const [loaded, setLoaded] = useState({ q: "", source: "all" as ArchiveSource, count: initial.items.length });
   const [matched, setMatched] = useState(initial.matched);
   const [hasMore, setHasMore] = useState(initial.hasMore);
   const [counts, setCounts] = useState(initial.counts);
@@ -23,19 +26,26 @@ export function ArchiveView({ initial }: { initial: ArchivePayload }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const first = useRef(true);
+  const requestSeq = useRef(0);
 
   useEffect(() => {
     if (first.current) {
       first.current = false;
       return;
     }
+    const token = requestSeq.current + 1;
+    requestSeq.current = token;
+    const query = { q, source };
+    const pageOffset = offset;
     let alive = true;
     const timer = window.setTimeout(() => {
       setPending(true);
-      getArchive({ data: { q, source, limit: 24, offset } })
+      setError(null);
+      getArchive({ data: { q, source, limit: 24, offset: pageOffset } })
         .then((next) => {
-          if (!alive) return;
-          setItems((prev) => (offset === 0 ? next.items : [...prev, ...next.items]));
+          if (!alive || requestSeq.current !== token) return;
+          setItems((prev) => applyArchivePage(prev, pageOffset, next.items));
+          setLoaded({ q: query.q, source: query.source, count: pageOffset + next.items.length });
           setMatched(next.matched);
           setHasMore(next.hasMore);
           setCounts(next.counts);
@@ -43,17 +53,28 @@ export function ArchiveView({ initial }: { initial: ArchivePayload }) {
           setError(null);
         })
         .catch(() => {
-          if (alive) setError("检索没有成功");
+          if (alive && requestSeq.current === token) setError("检索没有成功");
         })
         .finally(() => {
-          if (alive) setPending(false);
+          if (alive && requestSeq.current === token) setPending(false);
         });
     }, 220);
     return () => {
       alive = false;
       window.clearTimeout(timer);
     };
-  }, [q, source, offset]);
+  }, [q, source, offset, attempt]);
+
+  const current = { q, source };
+  const queryReady = archiveQueryReady(loaded, current, pending);
+  const canMore = queryReady && hasMore;
+
+  function more() {
+    const plan = planArchivePage({ current, loaded, loadedCount: loaded.count, pending });
+    if (!plan.allowed || !hasMore) return;
+    setOffset(plan.offset);
+    setAttempt((value) => value + 1);
+  }
 
   const countLabel =
     source === "review"
@@ -143,12 +164,8 @@ export function ArchiveView({ initial }: { initial: ArchivePayload }) {
         )}
       </ul>
 
-      {hasMore ? (
-        <button
-          type="button"
-          onClick={() => setOffset(items.length)}
-          className="h-11 w-full rounded-lg border border-line text-sm text-muted"
-        >
+      {canMore ? (
+        <button type="button" onClick={more} className="h-11 w-full rounded-lg border border-line text-sm text-muted">
           再显示一些
         </button>
       ) : null}

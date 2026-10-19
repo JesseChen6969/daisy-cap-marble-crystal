@@ -21,7 +21,7 @@ import { fmt, fmtPct, fmtSigned } from "@/lib/format";
 import type { DayBasket, DayBoard, DayBrief, DayStats, Desk } from "@/lib/market.types";
 import { readMarket, type Reading } from "@/lib/reading";
 import { scoreDesk, type Arm, type ScoreDay } from "@/lib/scorecard";
-import { carryWarnings, preferCount, replayDesk } from "@/lib/replay";
+import { carryWarnings, openDayFlight, preferCount, replayDesk, shownCount, takeDayFlight } from "@/lib/replay";
 import type { DeskTab } from "@/lib/desk-tab";
 import { marketPhase } from "@/lib/zones";
 import { getDayBasket, getDayBrief } from "@/lib/market.functions";
@@ -90,25 +90,31 @@ export function TerminalView({
     [data, selected, liveDate],
   );
   const historical = view.historical;
-  const briefFlight = useRef<string | null>(null);
-  const basketFlight = useRef<string | null>(null);
+  const briefFlight = useRef<{ day: string; token: number } | null>(null);
+  const basketFlight = useRef<{ day: string; token: number } | null>(null);
+  const flightSeq = useRef(0);
   const selectedRef = useRef(selected);
   selectedRef.current = selected;
   useEffect(() => {
     if (!selected) return;
     const day = selected;
     setBrief((prev) => (prev?.day === day ? prev : null));
-    if (briefFlight.current === day) return;
-    briefFlight.current = day;
+    const opened = openDayFlight(briefFlight.current, day, flightSeq.current + 1);
+    briefFlight.current = opened.flight;
+    if (opened.token == null) return;
+    flightSeq.current = opened.token;
+    const token = opened.token;
     getDayBrief({ data: { day } })
       .then((note) => {
-        if (briefFlight.current === day) briefFlight.current = null;
-        if (selectedRef.current !== day) return;
+        const taken = takeDayFlight(briefFlight.current, token, day, selectedRef.current);
+        briefFlight.current = taken.flight;
+        if (!taken.accept) return;
         setBrief(note);
       })
       .catch(() => {
-        if (briefFlight.current === day) briefFlight.current = null;
-        if (selectedRef.current !== day) return;
+        const taken = takeDayFlight(briefFlight.current, token, day, selectedRef.current);
+        briefFlight.current = taken.flight;
+        if (!taken.accept) return;
         setBrief((prev) =>
           prev?.day === day ? prev : { day, author: null, items: [], amountWanYi: null, stats: null, market: null },
         );
@@ -119,19 +125,24 @@ export function TerminalView({
     const day = selected;
     setBasket((prev) => (prev?.day === day ? prev : null));
     setBasketDay((prev) => (prev === day ? prev : null));
-    if (basketFlight.current === day) return;
     if (basket?.day === day) return;
-    basketFlight.current = day;
+    const opened = openDayFlight(basketFlight.current, day, flightSeq.current + 1);
+    basketFlight.current = opened.flight;
+    if (opened.token == null) return;
+    flightSeq.current = opened.token;
+    const token = opened.token;
     getDayBasket({ data: { day } })
       .then((row) => {
-        if (basketFlight.current === day) basketFlight.current = null;
-        if (selectedRef.current !== day) return;
+        const taken = takeDayFlight(basketFlight.current, token, day, selectedRef.current);
+        basketFlight.current = taken.flight;
+        if (!taken.accept) return;
         setBasket(row);
         setBasketDay(day);
       })
       .catch(() => {
-        if (basketFlight.current === day) basketFlight.current = null;
-        if (selectedRef.current !== day) return;
+        const taken = takeDayFlight(basketFlight.current, token, day, selectedRef.current);
+        basketFlight.current = taken.flight;
+        if (!taken.accept) return;
         setBasketDay(day);
       });
   }, [historical, selected, pulse, basket]);
@@ -926,8 +937,8 @@ function Mood({
         <Row k="上涨" v={data.emotion ? String(data.emotion.up) : "—"} hot />
         <Row k="下跌" v={data.emotion ? String(data.emotion.down) : "—"} />
         <Row k="平盘" v={data.emotion ? String(data.emotion.flat) : "—"} />
-        <Row k="涨停" v={stats ? String(stats.limitUp) : String(data.emotion?.limitUp ?? "—")} hot />
-        <Row k="跌停" v={stats ? String(stats.limitDown) : String(data.emotion?.limitDown ?? "—")} />
+        <Row k="涨停" v={shownCount(stats?.limitUp, data.emotion?.limitUp)} hot />
+        <Row k="跌停" v={shownCount(stats?.limitDown, data.emotion?.limitDown)} />
         <Row
           k="涨跌情绪"
           v={
@@ -936,7 +947,7 @@ function Mood({
                 ? "—"
                 : `${card.mood.toFixed(1)} · ${card.moodWord}`
               : stats
-                ? `涨停 ${stats.limitUp} / 跌停 ${stats.limitDown}`
+                ? `涨停 ${shownCount(stats.limitUp, null)} / 跌停 ${shownCount(stats.limitDown, null)}`
                 : "没有这一天的涨跌家数"
           }
         />

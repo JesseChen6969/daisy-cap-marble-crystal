@@ -1,5 +1,27 @@
 import type { ArchiveItem, Desk, LadderQuote, Quote } from "./market.types";
 
+export type DayFlight = { day: string; token: number } | null;
+
+export function openDayFlight(flight: DayFlight, day: string, nextToken: number): { flight: DayFlight; token: number | null } {
+  if (flight?.day === day) return { flight, token: null };
+  return { flight: { day, token: nextToken }, token: nextToken };
+}
+
+export function takeDayFlight(
+  flight: DayFlight,
+  token: number,
+  day: string,
+  selected: string,
+): { flight: DayFlight; accept: boolean } {
+  if (!flight || flight.token !== token || flight.day !== day || selected !== day) return { flight, accept: false };
+  return { flight: null, accept: true };
+}
+
+export function shownCount(primary: number | null | undefined, backup: number | null | undefined): string {
+  const value = primary ?? backup ?? null;
+  return value == null ? "—" : String(value);
+}
+
 export function preferCount(primary: number | null | undefined, backup: number | null | undefined): number | null {
   return primary ?? backup ?? null;
 }
