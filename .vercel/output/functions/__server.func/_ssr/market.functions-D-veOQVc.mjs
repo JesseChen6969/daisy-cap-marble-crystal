@@ -1,6 +1,6 @@
 import { n as TSS_SERVER_FUNCTION, t as createServerFn } from "./ssr.mjs";
 import { a as shanghaiParts } from "./zones-B6a6YmcZ.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/market.functions-D4KT8d61.js
+//#region node_modules/.nitro/vite/services/ssr/assets/market.functions-D-veOQVc.js
 var createServerRpc = (serverFnMeta, splitImportFn) => {
 	const url = "/_serverFn/" + serverFnMeta.id;
 	return Object.assign(splitImportFn, {
@@ -662,8 +662,15 @@ function readBoards(rows) {
 	return boards;
 }
 function finiteNum(value) {
+	if (value == null) return null;
+	if (typeof value === "string" && value.trim() === "") return null;
 	const parsed = typeof value === "number" ? value : Number(value);
 	return Number.isFinite(parsed) ? parsed : null;
+}
+function countNum(value) {
+	const parsed = finiteNum(value);
+	if (parsed == null || parsed < 0 || !Number.isInteger(parsed)) return null;
+	return parsed;
 }
 function compactDay(value) {
 	return String(value ?? "").match(/(\d{8})/)?.[1] ?? "";
@@ -696,10 +703,9 @@ async function loadDayStats(day) {
 	} catch (error) {
 		console.error("limit-pool-page", error instanceof Error ? error.message : error);
 	}
-	const limitUp = finiteNum(pool.data?.limit_up_count?.today?.num);
-	const limitDown = finiteNum(pool.data?.limit_down_count?.today?.num);
-	if (limitUp == null || limitDown == null) return null;
-	const broken = finiteNum(pool.data?.limit_up_count?.today?.open_num) ?? 0;
+	const limitUp = countNum(pool.data?.limit_up_count?.today?.num);
+	const limitDown = countNum(pool.data?.limit_down_count?.today?.num);
+	const broken = countNum(pool.data?.limit_up_count?.today?.open_num) ?? 0;
 	const seal = finiteNum(pool.data?.limit_up_count?.today?.rate);
 	let mainName = null;
 	let mainPct = null;
@@ -925,16 +931,16 @@ async function loadDayMarket(day) {
 		const text = await postForm("https://apphis.longhuvip.com/w1/api/index.php", `a=HisZhangFuDetail&c=HisHomeDingPan&Day=${day}&PhoneOSNew=2&VerSion=5.16.0.5&apiv=w38&DeviceID=1&Token=0&UserID=0`, 12e3, "Dalvik/2.1.0 (Linux; U; Android 9)");
 		const json = JSON.parse(text);
 		if (json.date !== day || !json.info) continue;
-		const up = finiteNum(json.info.SZJS);
-		const down = finiteNum(json.info.XDJS);
-		const flat = finiteNum(json.info["0"]);
+		const up = countNum(json.info.SZJS);
+		const down = countNum(json.info.XDJS);
+		const flat = countNum(json.info["0"]);
 		if (up == null || down == null || up + down < 1e3) continue;
 		return {
 			up,
 			down,
 			flat: flat ?? 0,
-			limitUp: finiteNum(json.info.SJZT),
-			limitDown: finiteNum(json.info.SJDT),
+			limitUp: countNum(json.info.SJZT),
+			limitDown: countNum(json.info.SJDT),
 			hsUp: null,
 			hsDown: null,
 			hsFlat: null,
@@ -973,7 +979,7 @@ async function loadComponents() {
 	return componentFlight;
 }
 function decodeXml(value) {
-	return value.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1").replace(/<[^>]+>/g, "").replace(/&/g, "&").replace(/</g, "<").replace(/>/g, ">").replace(/"/g, "\"").replace(/&#39;/g, "'").replace(/\s+/g, " ").trim();
+	return unescapeHtml(value.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1").replace(/<[^>]+>/g, "")).replace(/\s+/g, " ").trim();
 }
 function pickTag(block, tag) {
 	const match = block.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)</${tag}>`, "i"));
@@ -1127,10 +1133,12 @@ function selectArchive(rss, reports, input) {
 		if (!q) return true;
 		return `${item.title} ${item.summary} ${item.tag}`.toLowerCase().includes(q);
 	});
+	const offset = Math.max(0, input.offset ?? 0);
+	const items = filtered.slice(offset, offset + input.limit);
 	return {
-		items: filtered.slice(0, input.limit),
+		items,
 		matched: filtered.length,
-		hasMore: filtered.length > input.limit,
+		hasMore: offset + items.length < filtered.length,
 		counts: countsOf(all),
 		warning: null
 	};
@@ -1378,12 +1386,14 @@ var getArchive = createServerFn({ method: "GET" }).validator((input) => {
 	return {
 		q: typeof raw.q === "string" ? raw.q.slice(0, 80) : "",
 		source: SOURCES.includes(raw.source) ? raw.source : "all",
-		limit: typeof raw.limit === "number" && Number.isFinite(raw.limit) ? Math.min(2e3, Math.max(12, Math.floor(raw.limit))) : 24
+		limit: typeof raw.limit === "number" && Number.isFinite(raw.limit) ? Math.min(48, Math.max(12, Math.floor(raw.limit))) : 24,
+		offset: typeof raw.offset === "number" && Number.isFinite(raw.offset) ? Math.max(0, Math.floor(raw.offset)) : 0
 	};
 }).handler(getArchive_createServerFn_handler, async ({ data }) => loadFeed({
 	q: data.q,
 	source: data.source,
 	limit: data.limit,
+	offset: data.offset,
 	includeReports: data.source === "report" || data.source === "all"
 }));
 //#endregion

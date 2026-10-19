@@ -600,34 +600,42 @@ export function readMarket(desk: Desk): Reading {
   ];
 
   const metCount = checks.filter((item) => item.met).length;
+  const limitsKnown = emotion != null && emotion.limitDown != null && emotion.limitUp != null;
+  const quotesKnown = sh.price != null && hs300.price != null && cyb.price != null;
+  const decisionReady = Boolean(emotion) && limitsKnown && quotesKnown;
   let headline = "数字不齐，先不把今天说死。";
   if (panic) {
     headline = "跌停还堆着，恐慌没过去。这个位置谈市场底太早。";
-  } else if (emotion && metCount >= 4) {
+  } else if (!decisionReady) {
+    headline = "数字不齐，先不把今天说死。";
+  } else if (metCount >= 4) {
     headline = "右侧要看的几件事大多转过来了。即便如此，也还是底仓的思路，不是梭哈。";
-  } else if (emotion && healed) {
+  } else if (healed) {
     headline = "护盘把恐慌按住了，市场底还在磨。可以试多，右侧还没有。";
-  } else if (emotion) {
+  } else {
     headline = "上涨家数还没压过下跌，止跌流程没有走完。";
   }
 
   const phase = panic
     ? "恐慌未散"
-    : !emotion
+    : !decisionReady
       ? "先看原文"
       : metCount >= 4
         ? "右侧靠近"
         : healed
           ? "市场底还在磨"
           : "止跌没走完";
-  const phaseNote = panic
-    ? "跌停还多，这是恐慌，不是磨底。护盘底都还谈不上。"
-    : healed
-      ? "护盘底看的是跌停有没有蔓延、指数有没有失控。这一层大致按住了。市场底要市场自己磨出来，最好是 U 不是 V，而且非科技来带。时间不够的时候，他们不把试多说成右侧。"
-      : "上涨家数还没压过下跌。他们写过，这种日子谈止跌太早，大手买也只是跌得慢一点。";
-  const limitsKnown = emotion != null && emotion.limitDown != null && emotion.limitUp != null;
-  const position = !emotion || !limitsKnown
-    ? "涨跌家数或跌停没有取全，暂不可判断。"
+  const phaseNote = !decisionReady
+    ? "关键行情或跌停没有对齐，先不把这一天说成右侧或试多。"
+    : panic
+      ? "跌停还多，这是恐慌，不是磨底。护盘底都还谈不上。"
+      : healed
+        ? "护盘底看的是跌停有没有蔓延、指数有没有失控。这一层大致按住了。市场底要市场自己磨出来，最好是 U 不是 V，而且非科技来带。时间不够的时候，他们不把试多说成右侧。"
+        : "上涨家数还没压过下跌。他们写过，这种日子谈止跌太早，大手买也只是跌得慢一点。";
+  const position = !decisionReady
+    ? !quotesKnown
+      ? "指数行情没有对齐，暂不可判断。"
+      : "涨跌家数或跌停没有取全，暂不可判断。"
     : metCount >= 4
       ? "右侧齐了，仍然按底仓做，不是梭哈。看对只是一半，仓位重了、成本高了、耗太久，一样会被洗出去。"
       : healed

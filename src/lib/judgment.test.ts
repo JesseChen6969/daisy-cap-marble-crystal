@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { ArchiveItem, Desk, Emotion, Quote, TapePoint } from "./market.types.ts";
-import { selectArchive, unescapeHtml } from "./market.server.ts";
+import { countNum, decodeXml, finiteNum, selectArchive, unescapeHtml } from "./market.server.ts";
+import { carryWarnings, preferCount } from "./replay.ts";
+import { readMarket } from "./reading.ts";
 import { paceVolume, scoreDesk } from "./scorecard.ts";
 
 function quote(code: string, name: string, price: number, pct: number, date: string): Quote {
@@ -177,5 +179,103 @@ describe("unescapeHtml", () => {
   it("decodes named and numeric entities", () => {
     const raw = "&" + "amp; &" + "quot;x&" + "#39;&" + "lt;";
     assert.equal(unescapeHtml(raw), `& "x'<`);
+  });
+
+  it("decodes the rss path too", () => {
+    const raw = "<title>A &" + "amp; B</title>";
+    assert.equal(decodeXml(raw), "A & B");
+  });
+});
+
+describe("missing counts stay missing", () => {
+  it("does not turn null into zero, and keeps a real backup", () => {
+    assert.equal(finiteNum(null), null);
+    assert.equal(finiteNum(""), null);
+    assert.equal(countNum(null), null);
+    assert.equal(countNum(0), 0);
+    assert.equal(preferCount(countNum(null), 50), 50);
+    assert.equal(preferCount(null, null), null);
+    const kept = scoreDesk(
+      desk([point("2026-10-19", 0.2)], {
+        date: "2026-10-19",
+        up: 800,
+        down: 2500,
+        flat: 40,
+        limitUp: 20,
+        limitDown: preferCount(countNum(null), 50),
+      }),
+    );
+    assert.equal(kept.band, "回避");
+    assert.equal(kept.risk, "triggered");
+    assert.equal(kept.longPct, 0);
+    const blank = scoreDesk(
+      desk([point("2026-10-19", 0.2)], {
+        date: "2026-10-19",
+        up: 800,
+        down: 2500,
+        flat: 40,
+        limitUp: 20,
+        limitDown: preferCount(null, null),
+      }),
+    );
+    assert.equal(blank.longPct, null);
+    assert.equal(blank.risk, "unknown");
+  });
+});
+
+describe("missing index quotes", () => {
+  it("does not restore a position when the index print is empty", () => {
+    const base = desk([point("2026-10-19", 0.4)], {
+      date: "2026-10-19",
+      up: 3200,
+      down: 1500,
+      flat: 80,
+      limitUp: 40,
+      limitDown: 8,
+    });
+    base.sh = { ...base.sh, price: null };
+    const card = scoreDesk(base);
+    const reading = readMarket(base);
+    assert.equal(card.longPct, null);
+    assert.equal(card.shortPct, null);
+    assert.equal(card.band, "数据不足");
+    assert.equal(reading.phase, "先看原文");
+    assert.match(reading.position, /暂不可判断/);
+    assert.doesNotMatch(reading.headline, /试多|右侧要看/);
+  });
+});
+
+describe("path gaps", () => {
+  it("does not invent a buy when other index legs are missing", () => {
+    const full = [point("2026-10-15", -2), point("2026-10-16", 0)];
+    const gapped = [point("2026-10-15", -2), { ...point("2026-10-16", 0), hs300: null, small: null, cyb: null }];
+    const marked = scoreDesk(desk(full, null, "2026-10-16")).series.at(-1);
+    const open = scoreDesk(desk(gapped, null, "2026-10-16")).series.at(-1);
+    assert.equal(marked?.mark, "买");
+    assert.equal(open?.rate, null);
+    assert.equal(open?.mark, null);
+  });
+});
+
+describe("warnings and pages", () => {
+  it("keeps the missing-quote note when a later line is added", () => {
+    const lines = carryWarnings(["2026-10-16 的行情这一笔没对上。"], "补上了涨跌家数。");
+    assert.match(lines[0] ?? "", /没对上/);
+    assert.equal(lines[1], "补上了涨跌家数。");
+  });
+
+  it("stops offering another page after the last slice", () => {
+    const rss: ArchiveItem[] = Array.from({ length: 30 }, (_, index) => ({
+      title: `条目 ${index}`,
+      link: `https://example.test/page/${index}`,
+      summary: "",
+      time: index,
+      source: "获得信息差",
+      kind: "intel",
+      tag: "每日信息",
+    }));
+    const last = selectArchive([], rss, { q: "", source: "all", limit: 24, offset: 24 });
+    assert.equal(last.items.length, 6);
+    assert.equal(last.hasMore, false);
   });
 });

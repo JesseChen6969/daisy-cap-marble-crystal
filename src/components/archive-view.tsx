@@ -14,8 +14,12 @@ const TABS: { id: ArchiveSource; label: string }[] = [
 export function ArchiveView({ initial }: { initial: ArchivePayload }) {
   const [q, setQ] = useState("");
   const [source, setSource] = useState<ArchiveSource>("all");
-  const [limit, setLimit] = useState(24);
-  const [data, setData] = useState(initial);
+  const [offset, setOffset] = useState(0);
+  const [items, setItems] = useState(initial.items);
+  const [matched, setMatched] = useState(initial.matched);
+  const [hasMore, setHasMore] = useState(initial.hasMore);
+  const [counts, setCounts] = useState(initial.counts);
+  const [warning, setWarning] = useState(initial.warning);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const first = useRef(true);
@@ -28,10 +32,14 @@ export function ArchiveView({ initial }: { initial: ArchivePayload }) {
     let alive = true;
     const timer = window.setTimeout(() => {
       setPending(true);
-      getArchive({ data: { q, source, limit } })
+      getArchive({ data: { q, source, limit: 24, offset } })
         .then((next) => {
           if (!alive) return;
-          setData(next);
+          setItems((prev) => (offset === 0 ? next.items : [...prev, ...next.items]));
+          setMatched(next.matched);
+          setHasMore(next.hasMore);
+          setCounts(next.counts);
+          setWarning(next.warning);
           setError(null);
         })
         .catch(() => {
@@ -45,16 +53,16 @@ export function ArchiveView({ initial }: { initial: ArchivePayload }) {
       alive = false;
       window.clearTimeout(timer);
     };
-  }, [q, source, limit]);
+  }, [q, source, offset]);
 
   const countLabel =
     source === "review"
-      ? data.counts.review
+      ? counts.review
       : source === "intel"
-        ? data.counts.intel
+        ? counts.intel
         : source === "report"
-          ? data.counts.report
-          : data.counts.all;
+          ? counts.report
+          : counts.all;
 
   return (
     <div className="space-y-4">
@@ -67,16 +75,16 @@ export function ArchiveView({ initial }: { initial: ArchivePayload }) {
       </div>
 
       <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Count label="全部" value={data.counts.all} />
-        <Count label="每日复盘" value={data.counts.review} />
-        <Count label="每日信息" value={data.counts.intel} />
-        <Count label="历史研报" value={data.counts.report} />
+        <Count label="全部" value={counts.all} />
+        <Count label="每日复盘" value={counts.review} />
+        <Count label="每日信息" value={counts.intel} />
+        <Count label="历史研报" value={counts.report} />
       </dl>
 
       <input
         value={q}
         onChange={(event) => {
-          setLimit(24);
+          setOffset(0);
           setQ(event.target.value);
         }}
         placeholder="搜标题或摘要"
@@ -90,7 +98,7 @@ export function ArchiveView({ initial }: { initial: ArchivePayload }) {
             type="button"
             aria-pressed={source === tab.id}
             onClick={() => {
-              setLimit(24);
+              setOffset(0);
               setSource(tab.id);
             }}
             className={cn(
@@ -104,16 +112,16 @@ export function ArchiveView({ initial }: { initial: ArchivePayload }) {
       </div>
 
       <p className="text-xs text-faint">
-        {pending ? "检索中" : `匹配 ${data.matched}`}
+        {pending ? "检索中" : `匹配 ${matched}`}
         {countLabel ? ` · 本类 ${countLabel}` : ""}
       </p>
-      {error || data.warning ? <p className="text-sm text-warn">{error ?? data.warning}</p> : null}
+      {error || warning ? <p className="text-sm text-warn">{error ?? warning}</p> : null}
 
       <ul className="space-y-3">
-        {data.items.length === 0 ? (
+        {items.length === 0 ? (
           <li className="rounded-3xl border border-line bg-panel px-4 py-8 text-sm text-muted">没有匹配的条目。</li>
         ) : (
-          data.items.map((item) => (
+          items.map((item) => (
             <li key={item.link}>
               <a
                 href={item.link}
@@ -135,10 +143,10 @@ export function ArchiveView({ initial }: { initial: ArchivePayload }) {
         )}
       </ul>
 
-      {data.hasMore ? (
+      {hasMore ? (
         <button
           type="button"
-          onClick={() => setLimit((value) => value + 24)}
+          onClick={() => setOffset(items.length)}
           className="h-11 w-full rounded-lg border border-line text-sm text-muted"
         >
           再显示一些

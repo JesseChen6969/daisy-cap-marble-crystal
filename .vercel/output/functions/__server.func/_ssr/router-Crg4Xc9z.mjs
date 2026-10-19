@@ -6,7 +6,7 @@ import { t as twMerge } from "../_libs/tailwind-merge.mjs";
 import { i as marketPhase, r as clockLabel } from "./zones-B6a6YmcZ.mjs";
 import { a as Library, o as LayoutDashboard, r as Rows3, s as BookOpen, t as TriangleAlert } from "../_libs/lucide-react.mjs";
 import { a as union, i as string, n as number, r as object, t as literal } from "../_libs/zod.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/market.functions-ByE295bh.js
+//#region node_modules/.nitro/vite/services/ssr/assets/market.functions-BmIUiscL.js
 function cn(...inputs) {
 	return twMerge(clsx(inputs));
 }
@@ -41,11 +41,12 @@ var getArchive = createServerFn({ method: "GET" }).validator((input) => {
 	return {
 		q: typeof raw.q === "string" ? raw.q.slice(0, 80) : "",
 		source: SOURCES.includes(raw.source) ? raw.source : "all",
-		limit: typeof raw.limit === "number" && Number.isFinite(raw.limit) ? Math.min(2e3, Math.max(12, Math.floor(raw.limit))) : 24
+		limit: typeof raw.limit === "number" && Number.isFinite(raw.limit) ? Math.min(48, Math.max(12, Math.floor(raw.limit))) : 24,
+		offset: typeof raw.offset === "number" && Number.isFinite(raw.offset) ? Math.max(0, Math.floor(raw.offset)) : 0
 	};
 }).handler(createSsrRpc("036137cac849e54bc853cabc089824e88b3876ea1cd5d1cb988b1e0504be5a53"));
 //#endregion
-//#region node_modules/.nitro/vite/services/ssr/assets/router-S3TS0AuP.js
+//#region node_modules/.nitro/vite/services/ssr/assets/router-Crg4Xc9z.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var __defProp = Object.defineProperty;
@@ -551,7 +552,7 @@ function parseDeskDay(value) {
 	if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return void 0;
 	return value;
 }
-var $$splitComponentImporter$3 = () => import("./routes-CBHz2F7P.mjs");
+var $$splitComponentImporter$3 = () => import("./routes-ARA6xmDO.mjs");
 var Route$3 = createFileRoute("/")({
 	validateSearch: (search) => ({
 		tab: parseDeskTab(search.tab),
@@ -562,7 +563,7 @@ var Route$3 = createFileRoute("/")({
 	head: () => ({ meta: [{ title: "鳄鱼派量化系统" }] }),
 	component: lazyRouteComponent($$splitComponentImporter$3, "component")
 });
-var $$splitComponentImporter$2 = () => import("./archive-CHA5I06n.mjs");
+var $$splitComponentImporter$2 = () => import("./archive-hmRcHFmp.mjs");
 var Route$2 = createFileRoute("/archive")({
 	loader: () => getArchive({ data: {
 		q: "",
@@ -572,7 +573,7 @@ var Route$2 = createFileRoute("/archive")({
 	head: () => ({ meta: [{ title: "档案 · 鳄鱼派看盘" }] }),
 	component: lazyRouteComponent($$splitComponentImporter$2, "component")
 });
-var $$splitComponentImporter$1 = () => import("./breadth-DVpaAcZ5.mjs");
+var $$splitComponentImporter$1 = () => import("./breadth-j7MsttLL.mjs");
 var Route$1 = createFileRoute("/breadth")({
 	loader: () => getBreadth(),
 	head: () => ({ meta: [{ title: "涨跌 · 鳄鱼派看盘" }] }),

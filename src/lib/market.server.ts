@@ -695,9 +695,17 @@ function readBoards(rows: Array<{ name?: unknown; high_days?: unknown; high_days
   return boards;
 }
 
-function finiteNum(value: unknown): number | null {
+export function finiteNum(value: unknown): number | null {
+  if (value == null) return null;
+  if (typeof value === "string" && value.trim() === "") return null;
   const parsed = typeof value === "number" ? value : Number(value);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+export function countNum(value: unknown): number | null {
+  const parsed = finiteNum(value);
+  if (parsed == null || parsed < 0 || !Number.isInteger(parsed)) return null;
+  return parsed;
 }
 
 function compactDay(value: unknown): string {
@@ -745,10 +753,9 @@ async function loadDayStats(day: string): Promise<DayStats | null> {
       console.error("limit-pool-page", error instanceof Error ? error.message : error);
     }
   }
-  const limitUp = finiteNum(pool.data?.limit_up_count?.today?.num);
-  const limitDown = finiteNum(pool.data?.limit_down_count?.today?.num);
-  if (limitUp == null || limitDown == null) return null;
-  const broken = finiteNum(pool.data?.limit_up_count?.today?.open_num) ?? 0;
+  const limitUp = countNum(pool.data?.limit_up_count?.today?.num);
+  const limitDown = countNum(pool.data?.limit_down_count?.today?.num);
+  const broken = countNum(pool.data?.limit_up_count?.today?.open_num) ?? 0;
   const seal = finiteNum(pool.data?.limit_up_count?.today?.rate);
 
   let mainName: string | null = null;
@@ -988,16 +995,16 @@ async function loadDayMarket(day: string): Promise<DayMarket | null> {
       );
       const json = JSON.parse(text) as { date?: string; info?: Record<string, string> };
       if (json.date !== day || !json.info) continue;
-      const up = finiteNum(json.info.SZJS);
-      const down = finiteNum(json.info.XDJS);
-      const flat = finiteNum(json.info["0"]);
+      const up = countNum(json.info.SZJS);
+      const down = countNum(json.info.XDJS);
+      const flat = countNum(json.info["0"]);
       if (up == null || down == null || up + down < 1000) continue;
       return {
         up,
         down,
         flat: flat ?? 0,
-        limitUp: finiteNum(json.info.SJZT),
-        limitDown: finiteNum(json.info.SJDT),
+        limitUp: countNum(json.info.SJZT),
+        limitDown: countNum(json.info.SJDT),
         hsUp: null,
         hsDown: null,
         hsFlat: null,
@@ -1042,17 +1049,9 @@ async function loadComponents(): Promise<ComponentRow[]> {
   return componentFlight;
 }
 
-function decodeXml(value: string): string {
-  return value
-    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
-    .replace(/<[^>]+>/g, "")
-    .replace(/&/g, "&")
-    .replace(/</g, "<")
-    .replace(/>/g, ">")
-    .replace(/"/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/\s+/g, " ")
-    .trim();
+export function decodeXml(value: string): string {
+  const text = value.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1").replace(/<[^>]+>/g, "");
+  return unescapeHtml(text).replace(/\s+/g, " ").trim();
 }
 
 function pickTag(block: string, tag: string): string {
@@ -1201,7 +1200,7 @@ function countsOf(items: ArchiveItem[]): ArchivePayload["counts"] {
 export function selectArchive(
   rss: ArchiveItem[],
   reports: ArchiveItem[],
-  input: { q: string; source: ArchiveSource; limit: number },
+  input: { q: string; source: ArchiveSource; limit: number; offset?: number },
 ): ArchivePayload {
   const all = rankArchive([...rss, ...reports]);
   const q = input.q.trim().toLowerCase();
@@ -1212,10 +1211,12 @@ export function selectArchive(
     if (!q) return true;
     return `${item.title} ${item.summary} ${item.tag}`.toLowerCase().includes(q);
   });
+  const offset = Math.max(0, input.offset ?? 0);
+  const items = filtered.slice(offset, offset + input.limit);
   return {
-    items: filtered.slice(0, input.limit),
+    items,
     matched: filtered.length,
-    hasMore: filtered.length > input.limit,
+    hasMore: offset + items.length < filtered.length,
     counts: countsOf(all),
     warning: null,
   };
@@ -1236,6 +1237,7 @@ export async function loadFeed(input: {
   q: string;
   source: ArchiveSource;
   limit: number;
+  offset?: number;
   includeReports: boolean;
 }): Promise<ArchivePayload> {
   const warnings: string[] = [];

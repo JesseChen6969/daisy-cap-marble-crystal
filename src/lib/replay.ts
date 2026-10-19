@@ -1,5 +1,13 @@
 import type { ArchiveItem, Desk, LadderQuote, Quote } from "./market.types";
 
+export function preferCount(primary: number | null | undefined, backup: number | null | undefined): number | null {
+  return primary ?? backup ?? null;
+}
+
+export function carryWarnings(previous: string[], next: string): string[] {
+  return [...previous.filter((line) => /没对上|没有取到|不参与评分|不是同一天/.test(line)), next];
+}
+
 export function replayDesk(desk: Desk, day: string | null): { desk: Desk; historical: boolean } {
   const live = (desk.sh.date || desk.hs300.date || "").slice(0, 10);
   if (!day || day === live) return { desk, historical: false };

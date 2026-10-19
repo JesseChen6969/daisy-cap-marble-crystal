@@ -94,8 +94,8 @@ export type DayBoard = {
 };
 
 export type DayStats = {
-  limitUp: number;
-  limitDown: number;
+  limitUp: number | null;
+  limitDown: number | null;
   broken: number;
   seal: number | null;
   highBoard: string | null;

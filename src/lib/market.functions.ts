@@ -23,21 +23,24 @@ export const getDayBasket = createServerFn({ method: "GET" })
 export const getBreadth = createServerFn({ method: "GET" }).handler(async () => loadBreadth());
 
 export const getArchive = createServerFn({ method: "GET" })
-  .validator((input: { q?: string; source?: string; limit?: number } | undefined) => {
+  .validator((input: { q?: string; source?: string; limit?: number; offset?: number } | undefined) => {
     const raw = input ?? {};
     const q = typeof raw.q === "string" ? raw.q.slice(0, 80) : "";
     const source = SOURCES.includes(raw.source as ArchiveSource) ? (raw.source as ArchiveSource) : "all";
     const limit =
       typeof raw.limit === "number" && Number.isFinite(raw.limit)
-        ? Math.min(2000, Math.max(12, Math.floor(raw.limit)))
+        ? Math.min(48, Math.max(12, Math.floor(raw.limit)))
         : 24;
-    return { q, source, limit };
+    const offset =
+      typeof raw.offset === "number" && Number.isFinite(raw.offset) ? Math.max(0, Math.floor(raw.offset)) : 0;
+    return { q, source, limit, offset };
   })
   .handler(async ({ data }) =>
     loadFeed({
       q: data.q,
       source: data.source,
       limit: data.limit,
+      offset: data.offset,
       includeReports: data.source === "report" || data.source === "all",
     }),
   );

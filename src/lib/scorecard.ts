@@ -23,8 +23,8 @@ export type Arm = {
 
 export type ScoreDay = {
   date: string;
-  rate: number;
-  force: number;
+  rate: number | null;
+  force: number | null;
   sh: number | null;
   alla: number | null;
   hs300: number | null;
@@ -117,14 +117,19 @@ function ladderPct(desk: Desk, needle: string): number | null {
   return desk.ladder.find((item) => item.name.includes(needle))?.pct ?? null;
 }
 
-function pathScore(point: TapePoint): { rate: number; force: number } {
+function pathReady(point: TapePoint): boolean {
+  return point.sh != null && point.hs300 != null && point.small != null && point.cyb != null;
+}
+
+function pathScore(point: TapePoint): { rate: number | null; force: number | null } {
+  if (!pathReady(point)) return { rate: null, force: null };
   const sh = point.sh ?? 0;
   const hs = point.hs300 ?? 0;
   const sm = point.small ?? 0;
   const cy = point.cyb ?? 0;
   const gap = hs - sm;
   const rate = clamp100(48 + sh * 7 + hs * 4 - Math.abs(gap) * 6 + (cy < -1 ? -6 : cy > 1 ? 4 : 0));
-  const force = clamp100(52 + gap * 9 + (sh > -0.3 ? 5 : -6) + (point.alla ?? 0) * 3);
+  const force = clamp100(52 + gap * 9 + (sh > -0.3 ? 5 : -6) + (point.alla == null ? 0 : point.alla * 3));
   return { rate, force };
 }
 
@@ -162,6 +167,7 @@ function buildSeries(tape: TapePoint[]): ScoreDay[] {
     const prev = rows[i - 1];
     const curr = rows[i];
     if (!prev || !curr) continue;
+    if (prev.rate == null || curr.rate == null) continue;
     if (prev.rate < 40 && curr.rate >= 40) curr.mark = "买";
     else if (prev.rate >= 55 && curr.rate <= prev.rate - 6) curr.mark = "卖";
   }
@@ -181,6 +187,7 @@ export function scoreDesk(desk: Desk): Scorecard {
   const down = emotion?.down ?? 0;
   const known = emotion != null && up + down > 0;
   const limitsKnown = emotion != null && emotion.limitUp != null && emotion.limitDown != null;
+  const quotesKnown = sh.price != null && hs300.price != null && cyb.price != null;
   const limitDown = emotion?.limitDown ?? null;
   const limitUp = emotion?.limitUp ?? null;
   const ratio = known ? up / (up + down) : 0;
@@ -250,7 +257,7 @@ export function scoreDesk(desk: Desk): Scorecard {
   const rate = Math.round((points / FULL) * 10000) / 100;
 
   let band = "观望";
-  if (!known || !limitsKnown) band = "数据不足";
+  if (!known || !limitsKnown || !quotesKnown) band = "数据不足";
   else if (panic) band = "回避";
   else if (rate >= 60) band = "做多";
   else if (rate >= 40) band = "一般";
@@ -394,6 +401,8 @@ export function scoreDesk(desk: Desk): Scorecard {
   const risk: Scorecard["risk"] = !limitsKnown ? "unknown" : panic ? "triggered" : "clear";
   if (!known || !limitsKnown) {
     positionNote = "关键涨跌或跌停没有取到，暂不可判断";
+  } else if (!quotesKnown) {
+    positionNote = "上证、沪深300或创业板没有行情，暂不可判断";
   } else if (panic) {
     longPct = 0;
     shortPct = 0;

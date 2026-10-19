@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { RefreshCw, Settings } from "lucide-react";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   Bar,
   CartesianGrid,
@@ -21,7 +21,7 @@ import { fmt, fmtPct, fmtSigned } from "@/lib/format";
 import type { DayBasket, DayBoard, DayBrief, DayStats, Desk } from "@/lib/market.types";
 import { readMarket, type Reading } from "@/lib/reading";
 import { scoreDesk, type Arm, type ScoreDay } from "@/lib/scorecard";
-import { replayDesk } from "@/lib/replay";
+import { carryWarnings, preferCount, replayDesk } from "@/lib/replay";
 import type { DeskTab } from "@/lib/desk-tab";
 import { marketPhase } from "@/lib/zones";
 import { getDayBasket, getDayBrief } from "@/lib/market.functions";
@@ -90,41 +90,51 @@ export function TerminalView({
     [data, selected, liveDate],
   );
   const historical = view.historical;
+  const briefFlight = useRef<string | null>(null);
+  const basketFlight = useRef<string | null>(null);
+  const selectedRef = useRef(selected);
+  selectedRef.current = selected;
   useEffect(() => {
     if (!selected) return;
-    let alive = true;
-    setBrief(null);
-    getDayBrief({ data: { day: selected } })
+    const day = selected;
+    setBrief((prev) => (prev?.day === day ? prev : null));
+    if (briefFlight.current === day) return;
+    briefFlight.current = day;
+    getDayBrief({ data: { day } })
       .then((note) => {
-        if (alive) setBrief(note);
+        if (briefFlight.current === day) briefFlight.current = null;
+        if (selectedRef.current !== day) return;
+        setBrief(note);
       })
       .catch(() => {
-        if (alive) {
-          setBrief({ day: selected, author: null, items: [], amountWanYi: null, stats: null, market: null });
-        }
+        if (briefFlight.current === day) briefFlight.current = null;
+        if (selectedRef.current !== day) return;
+        setBrief((prev) =>
+          prev?.day === day ? prev : { day, author: null, items: [], amountWanYi: null, stats: null, market: null },
+        );
       });
-    return () => {
-      alive = false;
-    };
   }, [selected, pulse]);
   useEffect(() => {
     if (!historical || !selected) return;
-    let alive = true;
-    setBasket(null);
-    setBasketDay(null);
-    getDayBasket({ data: { day: selected } })
+    const day = selected;
+    setBasket((prev) => (prev?.day === day ? prev : null));
+    setBasketDay((prev) => (prev === day ? prev : null));
+    if (basketFlight.current === day) return;
+    if (basket?.day === day) return;
+    basketFlight.current = day;
+    getDayBasket({ data: { day } })
       .then((row) => {
-        if (!alive) return;
+        if (basketFlight.current === day) basketFlight.current = null;
+        if (selectedRef.current !== day) return;
         setBasket(row);
-        setBasketDay(selected);
+        setBasketDay(day);
       })
       .catch(() => {
-        if (alive) setBasketDay(selected);
+        if (basketFlight.current === day) basketFlight.current = null;
+        if (selectedRef.current !== day) return;
+        setBasketDay(day);
       });
-    return () => {
-      alive = false;
-    };
-  }, [historical, selected, pulse]);
+  }, [historical, selected, pulse, basket]);
   const basketReady = basketDay === selected;
   const shown = useMemo(() => {
     if (!historical || !brief || brief.day !== selected) return view.desk;
@@ -270,7 +280,7 @@ export function TerminalView({
           />
         ) : null}
         {tab === "risk" ? <Risk data={shown} card={card} cash={cash} reading={reading} historical={historical} /> : null}
-        {tab === "mood" ? <Mood data={shown} card={card} stats={stats} boards={stats ?? liveStats} /> : null}
+        {tab === "mood" ? <Mood data={shown} card={card} stats={stats} boards={stats ?? liveStats} ready={briefMatch} /> : null}
         {tab === "detail" ? <Detail data={shown} card={card} reading={reading} /> : null}
       </div>
     </div>
@@ -401,7 +411,7 @@ function Overview({
   const withYear = from.slice(0, 4) !== to.slice(0, 4);
   const sessionPoint = card.series[card.series.length - 1];
   const scored = (data.emotion?.up ?? 0) + (data.emotion?.down ?? 0) > 0;
-  const faceRate = historical && !scored && sessionPoint ? sessionPoint.rate : card.rate;
+  const faceRate = historical && !scored ? (sessionPoint?.rate ?? null) : card.rate;
   const faceBand = historical && !scored ? "不给仓位" : card.band;
   return (
     <>
@@ -416,7 +426,7 @@ function Overview({
                 </button>
               )}
             </div>
-            <p className="num mt-2 text-5xl leading-none text-white">{`${faceRate.toFixed(2)}%`}</p>
+            <p className="num mt-2 text-5xl leading-none text-white">{faceRate == null ? "—" : `${faceRate.toFixed(2)}%`}</p>
             {historical && !scored ? (
               <p className="num mt-2 text-xs text-[#8d877d]">指数路径分 · 40 观望 · 60 做多 · 涨跌家数还没到，先不重算六维</p>
             ) : (
@@ -426,7 +436,7 @@ function Overview({
             )}
             <p className="mt-2 inline-flex rounded-full bg-[#2a241c] px-2 py-0.5 text-xs text-[#e6c36a]">{faceBand}</p>
             <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[#2a2a30]">
-              <div className="h-full bg-[#e23d32]" style={{ width: `${Math.max(0, Math.min(100, faceRate))}%` }} />
+              <div className="h-full bg-[#e23d32]" style={{ width: `${Math.max(0, Math.min(100, faceRate ?? 0))}%` }} />
             </div>
             <div className="num mt-1 flex justify-between text-[10px] text-[#6f6a62]">
               <span>0</span><span>30</span><span>40</span><span>60</span><span>80</span><span>100</span>
@@ -597,8 +607,8 @@ function Overview({
           ) : (
             <>
               <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px]">
-                <Legend swatch="#c4a574" text={`得分率 ${last ? last.rate.toFixed(2) : "—"}%`} />
-                <Legend swatch="#e6c36a" text={`资金势力 ${last ? last.force.toFixed(2) : "—"}%`} />
+                <Legend swatch="#c4a574" text={`得分率 ${last?.rate == null ? "—" : last.rate.toFixed(2)}%`} />
+                <Legend swatch="#e6c36a" text={`资金势力 ${last?.force == null ? "—" : last.force.toFixed(2)}%`} />
                 {LINES.map((line) => (
                   <Legend key={line.key} swatch={line.color} text={`${line.name} ${fmtPct(last?.[line.key] ?? null)}`} />
                 ))}
@@ -776,7 +786,7 @@ function Overview({
                       ? "涨停家数没有取到"
                       : !statsReady
                         ? `涨停 ${card.limitUp} 家 · 连板正在取`
-                        : `涨停 ${card.limitUp} 家 · ${boards ? "这一天没有连板" : "连板没有取到"}`
+                        : `涨停 ${card.limitUp} 家 · ${boards == null ? "连板没有取到" : "这一天没有连板"}`
               }
             />
             {boards?.boards?.length ? <BoardList boards={boards.boards} /> : null}
@@ -897,7 +907,19 @@ function Risk({
   );
 }
 
-function Mood({ data, card, stats, boards }: { data: Desk; card: ReturnType<typeof scoreDesk>; stats: DayStats | null; boards: DayStats | null }) {
+function Mood({
+  data,
+  card,
+  stats,
+  boards,
+  ready,
+}: {
+  data: Desk;
+  card: ReturnType<typeof scoreDesk>;
+  stats: DayStats | null;
+  boards: DayStats | null;
+  ready: boolean;
+}) {
   return (
     <div className="grid gap-3 lg:grid-cols-2">
       <Card title="涨跌情绪">
@@ -919,11 +941,13 @@ function Mood({ data, card, stats, boards }: { data: Desk; card: ReturnType<type
           }
         />
       </Card>
-      <Card title={boards?.boards ? `连板个股 ${boards.boards.length} 只` : "连板个股"}>
-        {boards?.boards?.length ? (
+      <Card title={boards?.boards.length ? `连板个股 ${boards.boards.length} 只` : "连板个股"}>
+        {!ready ? (
+          <p className="text-xs text-[#8d877d]">连板名单正在取。</p>
+        ) : boards?.boards.length ? (
           <BoardList boards={boards.boards} />
         ) : (
-          <p className="text-xs text-[#8d877d]">{stats ? "这一天没有连板。" : "连板名单正在取。"}</p>
+          <p className="text-xs text-[#8d877d]">{boards ? "这一天没有连板。" : "连板没有取到。"}</p>
         )}
       </Card>
       <Card title="指数梯队">
@@ -1059,8 +1083,8 @@ function applyBrief(desk: Desk, brief: DayBrief, basket: DayBasket | null): Desk
   const market = brief.market;
   const hs = basket && basket.day === brief.day ? basket : null;
   if (!market && !hs) return next;
-  const limitUp = brief.stats?.limitUp ?? market?.limitUp ?? null;
-  const limitDown = brief.stats?.limitDown ?? market?.limitDown ?? null;
+  const limitUp = preferCount(brief.stats?.limitUp, market?.limitUp);
+  const limitDown = preferCount(brief.stats?.limitDown, market?.limitDown);
   return {
     ...next,
     emotion: market
@@ -1088,11 +1112,12 @@ function applyBrief(desk: Desk, brief: DayBrief, basket: DayBasket | null): Desk
           total: hs.hsUp + hs.hsDown + hs.hsFlat,
         }
       : desk.breadth,
-    warnings: [
+    warnings: carryWarnings(
+      desk.warnings,
       `${brief.day} 收盘回放。${
         market ? `全市场上涨 ${market.up}、下跌 ${market.down}` : "全市场涨跌家数没有取到"
       }${hs ? `，沪深300成分上涨 ${hs.hsUp}、下跌 ${hs.hsDown}` : "，沪深300成分还在回看"}。涨跌家数是全市场公开统计。沪深300按当前成分回看这一天的涨跌，不是从复盘句子里摘的。`,
-    ],
+    ),
   };
 }
 
@@ -1116,9 +1141,17 @@ function BoardList({ boards }: { boards: DayBoard[] }) {
 }
 
 function heatLine(stats: DayStats): string {
+  const limitDown = stats.limitDown;
+  const limitUp = stats.limitUp;
   const word =
-    stats.limitDown >= 40 ? "跌停偏多" : stats.broken >= stats.limitUp && stats.broken > 0 ? "炸板偏多" : stats.limitUp >= 80 ? "涨停偏多" : "不算过热";
-  return `${word} · 涨停 ${stats.limitUp} · 跌停 ${stats.limitDown} · 炸板 ${stats.broken}`;
+    limitDown != null && limitDown >= 40
+      ? "跌停偏多"
+      : limitUp != null && stats.broken >= limitUp && stats.broken > 0
+        ? "炸板偏多"
+        : limitUp != null && limitUp >= 80
+          ? "涨停偏多"
+          : "不算过热";
+  return `${word} · 涨停 ${limitUp ?? "未知"} · 跌停 ${limitDown ?? "未知"} · 炸板 ${stats.broken}`;
 }
 
 function mainLine(stats: DayStats): string {
@@ -1388,7 +1421,7 @@ function ChartTip(props: unknown) {
   return (
     <div className="rounded-lg border border-[#3a3a42] bg-[#121214] px-2 py-1 text-[11px]">
       <p className="num text-[#8d877d]">{shown}</p>
-      <p className="num">得分 {row.rate.toFixed(1)} · 势力 {row.force.toFixed(1)}</p>
+      <p className="num">得分 {row.rate == null ? "缺口" : row.rate.toFixed(1)} · 势力 {row.force == null ? "—" : row.force.toFixed(1)}</p>
       <p className="num">上证 {fmtPct(row.sh)}</p>
     </div>
   );
