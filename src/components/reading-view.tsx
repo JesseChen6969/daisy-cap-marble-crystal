@@ -76,7 +76,7 @@ export function ReadingView({ data }: { data: Desk }) {
                 <span className="text-down">{emotion.down}</span>
               </p>
               <p className="mt-1 text-xs text-faint">
-                上涨 / 下跌 · 平 {emotion.flat} · 涨停 {emotion.limitUp} · 跌停 {emotion.limitDown}
+                上涨 / 下跌 · 平 {emotion.flat} · 涨停 {emotion.limitUp ?? "未知"} · 跌停 {emotion.limitDown ?? "未知"}
               </p>
               <div className="mt-3 flex h-2 overflow-hidden rounded-full bg-panel-2">
                 <span className="bg-up" style={{ width: `${(emotion.up / Math.max(1, emotion.up + emotion.down)) * 100}%` }} />

@@ -15,6 +15,7 @@ export function DeskView({ initial, tab, day }: { initial: Desk; tab: DeskTab; d
   const [data, setData] = useState(initial);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pulse, setPulse] = useState(0);
   const [stealth, setStealth] = useState(false);
 
   useEffect(() => {
@@ -29,6 +30,7 @@ export function DeskView({ initial, tab, day }: { initial: Desk; tab: DeskTab; d
         const next = await getDesk();
         if (alive) {
           setData((prev) => keepTape(prev, next));
+          setPulse((value) => value + 1);
           setError(null);
         }
       } catch {
@@ -47,6 +49,7 @@ export function DeskView({ initial, tab, day }: { initial: Desk; tab: DeskTab; d
     try {
       const next = await getDesk();
       setData((prev) => keepTape(prev, next));
+      setPulse((value) => value + 1);
       setError(null);
     } catch {
       setError("刷新没有成功，仍显示上一笔");
@@ -93,6 +96,7 @@ export function DeskView({ initial, tab, day }: { initial: Desk; tab: DeskTab; d
       error={error ?? (data.warnings.length ? data.warnings.join("；") : null)}
       tab={tab}
       day={day}
+      pulse={pulse}
       onRefresh={() => void refresh()}
       onStealth={toggleStealth}
     />

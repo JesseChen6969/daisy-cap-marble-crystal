@@ -1,10 +1,11 @@
 import { i as __toESM } from "../_runtime.mjs";
 import { C as require_jsx_runtime, X as require_react, b as Link, x as useNavigate } from "../_libs/@tanstack/react-router+[...].mjs";
+import { a as shanghaiParts, c as toneOf$1, i as marketPhase, n as ZONE_ORDER, o as toneClass, t as INDICATORS } from "./zones-B6a6YmcZ.mjs";
 import { i as RefreshCw, n as Settings } from "../_libs/lucide-react.mjs";
-import { _ as getDesk, a as INDICATORS, c as shanghaiParts, d as toneOf$1, f as cn, g as getDayBrief, h as getDayBasket, i as Route$3, l as toneClass, o as ZONE_ORDER, s as marketPhase } from "./router-l1efmoVl.mjs";
+import { a as cn, c as getDayBasket, i as Route$3, l as getDayBrief, u as getDesk } from "./router-S3TS0AuP.mjs";
 import { a as fmtPct, n as fmt, o as fmtSigned, t as dirClass } from "./format-DEwBcFer.mjs";
 import { a as Line, c as Radar, d as PolarGrid, f as ResponsiveContainer, i as XAxis, l as PolarAngleAxis, n as RadarChart, o as CartesianGrid, p as Tooltip, r as YAxis, s as Bar, t as ComposedChart, u as PolarRadiusAxis } from "../_libs/recharts+[...].mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-xC-erSZc.js
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-CBHz2F7P.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var LINE = 3800;
@@ -67,11 +68,11 @@ function readSpokes(input) {
 	let breadthNote = "全市场涨跌没有取到";
 	if (emotion && emotion.up + emotion.down > 0) {
 		breadth = emotion.up / (emotion.up + emotion.down) * 100;
-		if (emotion.limitDown <= 15) breadth += 8;
-		if (emotion.limitDown >= 40) breadth = Math.min(breadth, 22);
-		else if (emotion.limitDown >= 20) breadth = Math.min(breadth, 42);
+		if (emotion.limitDown != null && emotion.limitDown <= 15) breadth += 8;
+		if (emotion.limitDown != null && emotion.limitDown >= 40) breadth = Math.min(breadth, 22);
+		else if (emotion.limitDown != null && emotion.limitDown >= 20) breadth = Math.min(breadth, 42);
 		if (emotion.up <= emotion.down) breadth = Math.min(breadth, 38);
-		breadthNote = `上涨 ${emotion.up}，下跌 ${emotion.down}，跌停 ${emotion.limitDown}`;
+		breadthNote = `上涨 ${emotion.up}，下跌 ${emotion.down}，跌停 ${emotion.limitDown ?? "未知"}`;
 	}
 	let line = 0;
 	let lineNote = "上证没有取到";
@@ -173,8 +174,8 @@ function readBoard(input) {
 	if ((hs300.pct ?? 0) < -1) inst -= 6;
 	if ((hs300.pct ?? 0) > .8) inst += 4;
 	let team = 4;
-	if (emotion && emotion.limitDown <= 15) team += 6;
-	if (emotion && emotion.limitDown >= 40) team -= 6;
+	if (emotion?.limitDown != null && emotion.limitDown <= 15) team += 6;
+	if (emotion?.limitDown != null && emotion.limitDown >= 40) team -= 6;
 	if ((a50?.pct ?? -1) >= -.3) team += 4;
 	if (sh.price != null && sh.price >= LINE) team += 10;
 	else if (sh.price != null && sh.price >= 3750) team += 2;
@@ -184,10 +185,10 @@ function readBoard(input) {
 	let retail = 0;
 	if (emotion && emotion.up + emotion.down > 0) {
 		retail = emotion.up / (emotion.up + emotion.down) * 22;
-		if (emotion.limitUp >= 80) retail += 5;
-		if (emotion.limitDown >= 40) retail = Math.min(retail, 8);
+		if (emotion.limitUp != null && emotion.limitUp >= 80) retail += 5;
+		if (emotion.limitDown != null && emotion.limitDown >= 40) retail = Math.min(retail, 8);
 	}
-	let hot = emotion ? Math.min(14, emotion.limitUp / 6) : 0;
+	let hot = emotion?.limitUp != null ? Math.min(14, emotion.limitUp / 6) : 0;
 	if ((cyb.pct ?? 0) > .6) hot += 5;
 	if ((brokers?.pct ?? -1) > 0) hot += 4;
 	if ((cyb.pct ?? 0) < -.3) hot -= 3;
@@ -225,14 +226,17 @@ function readBoard(input) {
 			label: "游资",
 			score: clampTo(hot, 25),
 			max: 25,
-			note: emotion ? `涨停 ${emotion.limitUp}，创业板 ${fmtPct(cyb.pct)}` : "涨停家数没有取到"
+			note: emotion?.limitUp != null ? `涨停 ${emotion.limitUp}，创业板 ${fmtPct(cyb.pct)}` : "涨停家数没有取到"
 		}
 	];
 	const forceSum = forces.reduce((sum, arm) => sum + arm.score, 0);
 	const forceMax = forces.reduce((sum, arm) => sum + arm.max, 0);
 	const rate = spokes.length ? spokes.reduce((sum, item) => sum + item.score, 0) / spokes.length : 0;
+	const limitsKnown = emotion != null && emotion.limitDown != null && emotion.limitUp != null;
+	const breadthKnown = emotion != null && emotion.up + emotion.down > 0;
 	let band = "观望";
-	if (input.panic) band = "回避";
+	if (!breadthKnown || !limitsKnown) band = "数据不足";
+	else if (input.panic) band = "回避";
 	else if (rate >= 60) band = "做多";
 	else if (rate >= 40) band = "一般";
 	else if (input.healed) band = "磨底";
@@ -241,8 +245,8 @@ function readBoard(input) {
 	else if (input.forceLabel === "小维护" || input.forceLabel === "像一起拉") pattern = "护盘市";
 	else if (input.forceLabel === "结构不对") pattern = "错位市";
 	let heat = "一般";
-	if (input.panic || emotion != null && emotion.limitDown >= 40) heat = "短期冰点";
-	else if (emotion != null && emotion.limitUp >= 90 && emotion.up > emotion.down * 1.8) heat = "过热";
+	if (input.panic || emotion?.limitDown != null && emotion.limitDown >= 40) heat = "短期冰点";
+	else if (emotion?.limitUp != null && emotion.limitUp >= 90 && emotion.up > emotion.down * 1.8) heat = "过热";
 	else if (input.healed && !input.volumeHot) heat = "不热";
 	const quiet = sh.pct != null && cyb.pct != null && Math.abs(sh.pct) < .8 && Math.abs(cyb.pct) < 1.2 ? "安静" : "有波动";
 	return {
@@ -362,8 +366,8 @@ function readMarket(desk) {
 	const lastNet = margin.length ? margin[margin.length - 1] : null;
 	const clock = readClock(desk.shSeries.length > 0 ? desk.shSeries : desk.series, sh.price);
 	const volumeHot = indicators.av != null && indicators.av >= 2;
-	const healed = emotion != null && emotion.limitDown <= 15 && emotion.up > emotion.down;
-	const panic = emotion != null && emotion.limitDown >= 40;
+	const healed = emotion != null && emotion.limitDown != null && emotion.limitDown <= 15 && emotion.up > emotion.down;
+	const panic = emotion != null && emotion.limitDown != null && emotion.limitDown >= 40;
 	const belowLine = sh.price != null && sh.price < LINE;
 	const techQuiet = cyb.pct != null && sh.pct != null && cyb.pct <= 0 && sh.pct >= cyb.pct;
 	const brokersWeak = brokers?.pct == null || brokers.pct <= 0;
@@ -427,7 +431,7 @@ function readMarket(desk) {
 		{
 			title: "龙哥先止血",
 			state: panic ? "waiting" : lineBack && healed ? "met" : healed ? "partial" : "waiting",
-			evidence: emotion ? `上涨 ${emotion.up}，下跌 ${emotion.down}，涨停 ${emotion.limitUp}，跌停 ${emotion.limitDown}` : "全市场涨跌没有取到"
+			evidence: emotion ? `上涨 ${emotion.up}，下跌 ${emotion.down}，涨停 ${emotion.limitUp ?? "未知"}，跌停 ${emotion.limitDown ?? "未知"}` : "全市场涨跌没有取到"
 		},
 		{
 			title: "别硬拉科技",
@@ -463,9 +467,10 @@ function readMarket(desk) {
 	else if (emotion) headline = "上涨家数还没压过下跌，止跌流程没有走完。";
 	const phase = panic ? "恐慌未散" : !emotion ? "先看原文" : metCount >= 4 ? "右侧靠近" : healed ? "市场底还在磨" : "止跌没走完";
 	const phaseNote = panic ? "跌停还多，这是恐慌，不是磨底。护盘底都还谈不上。" : healed ? "护盘底看的是跌停有没有蔓延、指数有没有失控。这一层大致按住了。市场底要市场自己磨出来，最好是 U 不是 V，而且非科技来带。时间不够的时候，他们不把试多说成右侧。" : "上涨家数还没压过下跌。他们写过，这种日子谈止跌太早，大手买也只是跌得慢一点。";
-	const position = metCount >= 4 ? "右侧齐了，仍然按底仓做，不是梭哈。看对只是一半，仓位重了、成本高了、耗太久，一样会被洗出去。" : healed ? "可以试多。试多是底仓：长线不空仓，也不重仓，看周线，跌到前一个平台再加一点。看对只是一半。" : "右侧没齐。观望，或者只留手里的仓位，都是他们写过的做法。别用一两根日线把仓位打满。";
+	const limitsKnown = emotion != null && emotion.limitDown != null && emotion.limitUp != null;
+	const position = !emotion || !limitsKnown ? "涨跌家数或跌停没有取全，暂不可判断。" : metCount >= 4 ? "右侧齐了，仍然按底仓做，不是梭哈。看对只是一半，仓位重了、成本高了、耗太久，一样会被洗出去。" : healed ? "可以试多。试多是底仓：长线不空仓，也不重仓，看周线，跌到前一个平台再加一点。看对只是一半。" : "右侧没齐。观望，或者只留手里的仓位，都是他们写过的做法。别用一两根日线把仓位打满。";
 	const detail = [
-		emotion ? `全市场上涨 ${emotion.up} 家、下跌 ${emotion.down} 家、跌停 ${emotion.limitDown} 家。复盘里把跌停只有十来家，看成恐慌没有蔓延。` : "",
+		emotion ? `全市场上涨 ${emotion.up} 家、下跌 ${emotion.down} 家、跌停 ${emotion.limitDown ?? "未知"} 家。复盘里把跌停只有十来家，看成恐慌没有蔓延。` : "",
 		belowLine ? `上证收在 ${fmt(sh.price, 0)}，仍低于他们写了一年多的 3800 护盘线。` : sh.price != null ? `上证收在 ${fmt(sh.price, 0)}，站回了 3800。` : "",
 		gapStyle != null ? `上证和创业板差 ${fmtSigned(gapStyle)} 个点，${gapWords(gapStyle)}。创业板更弱时，他们不把它看成科技抢风头。` : "",
 		gapBig != null ? `沪深300和国证2000差 ${fmtSigned(gapBig)} 个点，${gapWords(gapBig)}。原话比的是沪深300和中证2000，中证2000这条行情没有取到，小票一端用国证2000代替。` : "",
@@ -495,29 +500,33 @@ function readMarket(desk) {
 		nearLow
 	};
 }
+var PATH_MODEL = "path-v1";
+var LIVE_MODEL = "six-v1";
 var FULL = 107;
 function clamp(n, max) {
 	if (!Number.isFinite(n)) return 0;
 	return Math.round(Math.max(0, Math.min(max, n)) * 100) / 100;
 }
-function paceVolume(av) {
+function paceVolume(av, quote, now = /* @__PURE__ */ new Date()) {
 	if (av == null) return {
 		value: null,
 		early: false,
 		note: "成交没有取到"
 	};
-	const phase = marketPhase().phase;
-	if (phase === "closed" || phase === "weekend") return {
+	const parts = shanghaiParts(now);
+	const today = `${parts.year}-${parts.month}-${parts.day}`;
+	const date = quote.date.slice(0, 10);
+	const [hour = "0", minute = "0"] = quote.time.split(":");
+	const mins = Number(hour) * 60 + Number(minute);
+	if (!(date === today && mins >= 570 && mins < 900)) return {
 		value: av,
 		early: false,
 		note: `两市成交 ${av.toFixed(2)} 万亿`
 	};
-	const parts = shanghaiParts();
-	const mins = Number(parts.hour) * 60 + Number(parts.minute);
 	let elapsed = 0;
 	if (mins >= 780) elapsed = 120 + Math.min(120, mins - 780);
 	else if (mins >= 690) elapsed = 120;
-	else if (mins >= 570) elapsed = mins - 570;
+	else elapsed = mins - 570;
 	if (elapsed < 25) return {
 		value: null,
 		early: true,
@@ -559,7 +568,7 @@ function volumeTone(tape) {
 	if (last <= avg * .92) return "缩量";
 	return "平量";
 }
-function buildSeries(tape, rate, force, stampLive) {
+function buildSeries(tape) {
 	const rows = tape.map((point) => {
 		const path = pathScore(point);
 		return {
@@ -577,11 +586,6 @@ function buildSeries(tape, rate, force, stampLive) {
 			mark: null
 		};
 	});
-	const last = rows[rows.length - 1];
-	if (stampLive && last) {
-		last.rate = Math.round(rate * 100) / 100;
-		last.force = Math.round(force * 100) / 100;
-	}
 	for (let i = 1; i < rows.length; i += 1) {
 		const prev = rows[i - 1];
 		const curr = rows[i];
@@ -593,23 +597,26 @@ function buildSeries(tape, rate, force, stampLive) {
 }
 function scoreDesk(desk) {
 	const reading = readMarket(desk);
-	const { emotion, sh, cyb, hs300, hstech, indicators, brokers } = desk;
+	const { sh, cyb, hs300, hstech, indicators, brokers } = desk;
+	const quoteDate = (sh.date || hs300.date || "").slice(0, 10);
+	const emotion = desk.emotion && desk.emotion.date && (!quoteDate || desk.emotion.date === quoteDate) ? desk.emotion : null;
 	const a50 = ladderPct(desk, "50");
 	const gz = ladderPct(desk, "2000");
 	const gap = hs300.pct != null && gz != null ? hs300.pct - gz : null;
 	const up = emotion?.up ?? 0;
 	const down = emotion?.down ?? 0;
-	const known = up + down > 0;
+	const known = emotion != null && up + down > 0;
+	const limitsKnown = emotion != null && emotion.limitUp != null && emotion.limitDown != null;
+	const limitDown = emotion?.limitDown ?? null;
+	const limitUp = emotion?.limitUp ?? null;
 	const ratio = known ? up / (up + down) : 0;
-	const panic = (emotion?.limitDown ?? 0) >= 40;
-	const healed = emotion != null && emotion.limitDown <= 15 && emotion.up > emotion.down;
+	const panic = limitDown != null && limitDown >= 40;
+	const healed = known && limitDown != null && limitDown <= 15 && up > down;
 	const forceLabel = reading.force.label;
 	let effect = known ? ratio * 10 : 0;
-	if (emotion) {
-		effect += Math.min(4, emotion.limitUp / 25);
-		if (emotion.limitDown >= 40) effect = Math.min(effect, 3);
-		else if (emotion.limitDown <= 15) effect += 1.5;
-	}
+	if (known && limitUp != null) effect += Math.min(4, limitUp / 25);
+	if (panic) effect = Math.min(effect, 3);
+	else if (healed) effect += 1.5;
 	let structure = 6;
 	const seq = [
 		a50,
@@ -631,7 +638,10 @@ function scoreDesk(desk) {
 	}
 	if (healed) line += 4;
 	if (panic) line = Math.min(line, 4);
-	const paced = paceVolume(indicators.av);
+	const paced = paceVolume(indicators.av, {
+		date: sh.date || hs300.date,
+		time: sh.time || hs300.time
+	});
 	let volume = paced.early ? 8 : 4;
 	if (paced.value != null) {
 		if (paced.value >= 1 && paced.value <= 2) volume = 8 + (paced.value - 1) * 4;
@@ -694,13 +704,14 @@ function scoreDesk(desk) {
 	const points = Math.round(dims.reduce((sum, dim) => sum + dim.score, 0) * 100) / 100;
 	const rate = Math.round(points / FULL * 1e4) / 100;
 	let band = "观望";
-	if (panic) band = "回避";
+	if (!known || !limitsKnown) band = "数据不足";
+	else if (panic) band = "回避";
 	else if (rate >= 60) band = "做多";
 	else if (rate >= 40) band = "一般";
 	const inst = 10 + (gap ?? 0) * 5 + ((hs300.pct ?? 0) > .8 ? 4 : 0) + ((hs300.pct ?? 0) < -1 ? -6 : 0);
 	let team = 4;
-	if (emotion && emotion.limitDown <= 15) team += 6;
-	if (emotion && emotion.limitDown >= 40) team -= 6;
+	if (limitDown != null && limitDown <= 15) team += 6;
+	if (limitDown != null && limitDown >= 40) team -= 6;
 	if ((a50 ?? -1) >= -.3) team += 4;
 	if (sh.price != null && sh.price >= 3800) team += 10;
 	else if (sh.price != null && sh.price >= 3750) team += 2;
@@ -708,9 +719,9 @@ function scoreDesk(desk) {
 	if (forceLabel === "像一起拉") team += 6;
 	const foreign = hstech.pct == null ? 0 : 6 + hstech.pct * 2.5;
 	let retail = known ? ratio * 22 : 0;
-	if (emotion && emotion.limitUp >= 80) retail += 5;
-	if (emotion && emotion.limitDown >= 40) retail = Math.min(retail, 8);
-	let hot = emotion ? Math.min(14, emotion.limitUp / 6) : 0;
+	if (limitUp != null && limitUp >= 80) retail += 5;
+	if (limitDown != null && limitDown >= 40) retail = Math.min(retail, 8);
+	let hot = limitUp != null ? Math.min(14, limitUp / 6) : 0;
 	if ((cyb.pct ?? 0) > .6) hot += 5;
 	if ((brokers?.pct ?? -1) > 0) hot += 4;
 	if ((cyb.pct ?? 0) < -.3) hot -= 3;
@@ -748,7 +759,7 @@ function scoreDesk(desk) {
 			label: "游资",
 			score: clamp(hot, 25),
 			max: 25,
-			note: emotion ? `涨停 ${emotion.limitUp}` : "涨停家数没有取到"
+			note: limitUp != null ? `涨停 ${limitUp}` : "涨停家数没有取到"
 		}
 	];
 	const best = arms.reduce((top, arm) => arm.score / arm.max > top.score / top.max ? arm : top, arms[0]);
@@ -763,11 +774,11 @@ function scoreDesk(desk) {
 	const patternNote = panic ? "跌停在扩散" : healed ? "急跌不恐慌，等右侧信号" : "右侧信号还没有";
 	let heat = "一般";
 	if (panic) heat = "短期冰点";
-	else if (emotion && emotion.limitUp >= 90 && ratio > .65) heat = "过热";
+	else if (limitUp != null && limitUp >= 90 && ratio > .65) heat = "过热";
 	else if (healed && (indicators.av == null || indicators.av < 2)) heat = "不热";
 	const quiet = sh.pct != null && cyb.pct != null && Math.abs(sh.pct) < .8 && Math.abs(cyb.pct) < 1.2 ? "安静" : "有波动";
 	let gs = 0;
-	if (emotion && emotion.limitUp >= 80) gs += 4;
+	if (limitUp != null && limitUp >= 80) gs += 4;
 	if (ratio > .67) gs += 3;
 	if (indicators.av != null && !paced.early && (paced.value ?? 0) >= 2.2) gs += 2;
 	if ((cyb.pct ?? 0) > 2) gs += 3;
@@ -829,11 +840,16 @@ function scoreDesk(desk) {
 	const retailDelta = known && retailArm ? Math.round((retailArm.score - 15.5) * 10) / 10 : null;
 	const retailWord = !known ? "没有涨跌家数" : retailDelta == null ? "没有取到" : retailDelta >= 5 ? "乐观" : retailDelta <= -5 ? "悲观" : "平淡";
 	const met = reading.checks.filter((item) => item.met).length;
-	let longPct = 0;
-	let shortPct = 0;
-	let positionNote = "右侧没齐，先观望";
-	if (panic) positionNote = "冰点不抄";
-	else if (reading.phase === "右侧靠近" || rate >= 60 && met >= 4) {
+	let longPct = null;
+	let shortPct = null;
+	let positionNote = "关键涨跌或跌停没有取到，暂不可判断";
+	const risk = !limitsKnown ? "unknown" : panic ? "triggered" : "clear";
+	if (!known || !limitsKnown) positionNote = "关键涨跌或跌停没有取到，暂不可判断";
+	else if (panic) {
+		longPct = 0;
+		shortPct = 0;
+		positionNote = "冰点不抄";
+	} else if (reading.phase === "右侧靠近" || rate >= 60 && met >= 4) {
 		longPct = 30;
 		shortPct = 10;
 		positionNote = "右侧靠近了，仍不满仓";
@@ -841,6 +857,10 @@ function scoreDesk(desk) {
 		longPct = 15;
 		shortPct = 0;
 		positionNote = "试多底仓，短线不加";
+	} else {
+		longPct = 0;
+		shortPct = 0;
+		positionNote = "右侧没齐，先观望";
 	}
 	const lead = desk.boardLead;
 	const heavy = desk.laggards.filter((row) => (row.pct ?? 0) <= -3).slice(0, 2);
@@ -880,12 +900,15 @@ function scoreDesk(desk) {
 		longPct,
 		shortPct,
 		positionNote,
+		risk,
+		model: LIVE_MODEL,
+		seriesModel: PATH_MODEL,
 		mainName: lead?.name ?? "行业榜没有取到",
 		mainPct: lead?.pct ?? null,
 		mainShare: lead ? Math.round(lead.share * 10) / 10 : null,
 		kill,
-		series: buildSeries(desk.tape, rate, forceRate, emotion != null),
-		limitUp: emotion?.limitUp ?? null,
+		series: buildSeries(desk.tape),
+		limitUp,
 		headline: reading.headline
 	};
 }
@@ -1121,7 +1144,7 @@ var LINES = [
 		color: "#7dce6a"
 	}
 ];
-function TerminalView({ data, tab, day, pending, error, onRefresh, onStealth }) {
+function TerminalView({ data, tab, day, pulse = 0, pending, error, onRefresh, onStealth }) {
 	const navigate = useNavigate();
 	const [frame, setFrame] = (0, import_react.useState)("day");
 	const [dimsOpen, setDimsOpen] = (0, import_react.useState)(false);
@@ -1171,7 +1194,7 @@ function TerminalView({ data, tab, day, pending, error, onRefresh, onStealth }) 
 		return () => {
 			alive = false;
 		};
-	}, [selected]);
+	}, [selected, pulse]);
 	(0, import_react.useEffect)(() => {
 		if (!historical || !selected) return;
 		let alive = true;
@@ -1187,7 +1210,11 @@ function TerminalView({ data, tab, day, pending, error, onRefresh, onStealth }) 
 		return () => {
 			alive = false;
 		};
-	}, [historical, selected]);
+	}, [
+		historical,
+		selected,
+		pulse
+	]);
 	const basketReady = basketDay === selected;
 	const shown = (0, import_react.useMemo)(() => {
 		if (!historical || !brief || brief.day !== selected) return view.desk;
@@ -1201,7 +1228,8 @@ function TerminalView({ data, tab, day, pending, error, onRefresh, onStealth }) 
 		basketReady
 	]);
 	const briefMatch = brief?.day === selected;
-	const stats = briefMatch ? brief?.stats ?? null : null;
+	const stats = historical && briefMatch ? brief?.stats ?? null : null;
+	const liveStats = !historical && briefMatch ? brief?.stats ?? null : null;
 	const statsPending = historical && !briefMatch;
 	const briefReady = historical && briefMatch;
 	const card = (0, import_react.useMemo)(() => scoreDesk(shown), [shown]);
@@ -1209,7 +1237,9 @@ function TerminalView({ data, tab, day, pending, error, onRefresh, onStealth }) 
 	const phase = marketPhase();
 	const closed = phase.phase === "closed" || phase.phase === "weekend" || phase.phase === "lunch";
 	const quoteTime = historical ? "收盘" : (data.sh.time || data.hs300.time || "").slice(0, 5) || "—";
-	const cash = 100 - card.longPct - card.shortPct;
+	const longPct = card.longPct;
+	const shortPct = card.shortPct;
+	const cash = longPct != null && shortPct != null ? 100 - longPct - shortPct : null;
 	function chooseDay(next) {
 		const value = !next || next === liveDate ? void 0 : next;
 		if (value === picked) return;
@@ -1318,9 +1348,9 @@ function TerminalView({ data, tab, day, pending, error, onRefresh, onStealth }) 
 								className: "rounded-full bg-black/25 px-2 py-1",
 								children: historical ? "收盘回放" : `数据 ${quoteTime}`
 							}),
-							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
 								className: "rounded-full bg-black/25 px-2 py-1",
-								children: historical ? shown.emotion ? "评分: 收盘重算" : "评分: 收盘路径" : "评分: 现算"
+								children: [historical ? shown.emotion ? "六维: 当天重算" : "六维: 数据不足" : "六维: 现算", " · 曲线: 路径分"]
 							}),
 							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
 								type: "button",
@@ -1374,6 +1404,7 @@ function TerminalView({ data, tab, day, pending, error, onRefresh, onStealth }) 
 					historical,
 					reading,
 					stats,
+					boards: stats ?? liveStats,
 					statsPending,
 					statsReady: briefMatch,
 					basketReady
@@ -1388,7 +1419,8 @@ function TerminalView({ data, tab, day, pending, error, onRefresh, onStealth }) 
 				tab === "mood" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Mood, {
 					data: shown,
 					card,
-					stats
+					stats,
+					boards: stats ?? liveStats
 				}) : null,
 				tab === "detail" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Detail, {
 					data: shown,
@@ -1513,7 +1545,7 @@ function ReviewCard({ data, pending, amount }) {
 		]
 	});
 }
-function Overview({ data, card, cash, frame, setFrame, dimsOpen, setDimsOpen, span, setSpan, historical, reading, stats, statsPending, statsReady, basketReady }) {
+function Overview({ data, card, cash, frame, setFrame, dimsOpen, setDimsOpen, span, setSpan, historical, reading, stats, boards, statsPending, statsReady, basketReady }) {
 	const all = card.series;
 	const oldest = all[0]?.date ?? "";
 	const newest = all[all.length - 1]?.date ?? "";
@@ -1526,7 +1558,7 @@ function Overview({ data, card, cash, frame, setFrame, dimsOpen, setDimsOpen, sp
 	const sessionPoint = card.series[card.series.length - 1];
 	const scored = (data.emotion?.up ?? 0) + (data.emotion?.down ?? 0) > 0;
 	const faceRate = historical && !scored && sessionPoint ? sessionPoint.rate : card.rate;
-	const faceBand = historical && !scored ? faceRate >= 60 ? "做多" : faceRate >= 40 ? "一般" : "观望" : card.band;
+	const faceBand = historical && !scored ? "不给仓位" : card.band;
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 		className: "grid items-start gap-3 lg:grid-cols-[280px_minmax(0,1fr)]",
 		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
@@ -1837,7 +1869,7 @@ function Overview({ data, card, cash, frame, setFrame, dimsOpen, setDimsOpen, sp
 						" · ",
 						shown.length,
 						" 个交易日",
-						historical || to !== newest ? " · 按指数涨跌近似，不是六维现算" : " · 当日为六维现算，更早用指数路径近似",
+						historical || to !== newest ? " · 整段都是指数路径分，买卖点只按这套算法" : " · 整段都是指数路径分，买卖点只按这套算法。上面的百分比是当天六维分，不回写到曲线",
 						" · 全A为沪深300与中证1000等权"
 					]
 				}),
@@ -2077,9 +2109,9 @@ function Overview({ data, card, cash, frame, setFrame, dimsOpen, setDimsOpen, sp
 						})] }) : null,
 						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Row, {
 							k: "最高标",
-							v: stats?.boards?.length ? `${stats.boards[0]?.label ?? ""} ${stats.boards[0]?.name ?? ""} · 连板 ${stats.boards.length} 只` : historical ? stats ? `${stats.highBoard ?? "没有连板"} · 涨停 ${stats.limitUp} · 炸板 ${stats.broken}` : statsPending ? "涨停池正在取" : "涨停池没有取到" : card.limitUp == null ? "涨停家数没有取到" : !statsReady ? `涨停 ${card.limitUp} 家 · 连板正在取` : `涨停 ${card.limitUp} 家 · ${stats ? "这一天没有连板" : "连板没有取到"}`
+							v: boards?.boards?.length ? `${boards.boards[0]?.label ?? ""} ${boards.boards[0]?.name ?? ""} · 连板 ${boards.boards.length} 只` : historical ? stats ? `${stats.highBoard ?? "没有连板"} · 涨停 ${stats.limitUp} · 炸板 ${stats.broken}` : statsPending ? "涨停池正在取" : "涨停池没有取到" : card.limitUp == null ? "涨停家数没有取到" : !statsReady ? `涨停 ${card.limitUp} 家 · 连板正在取` : `涨停 ${card.limitUp} 家 · ${boards ? "这一天没有连板" : "连板没有取到"}`
 						}),
-						stats?.boards?.length ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(BoardList, { boards: stats.boards }) : null,
+						boards?.boards?.length ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(BoardList, { boards: boards.boards }) : null,
 						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Row, {
 							k: "涨跌情绪",
 							v: card.mood != null ? `${card.mood.toFixed(1)} / 100 · ${card.moodWord}` : historical && stats ? `涨停 ${stats.limitUp} / 跌停 ${stats.limitDown}${stats.seal != null ? ` · 封板 ${(stats.seal * 100).toFixed(1)}%` : ""}` : historical ? statsPending ? "涨停池正在取" : "没有这一天的涨跌家数" : card.moodWord
@@ -2110,27 +2142,27 @@ function Overview({ data, card, cash, frame, setFrame, dimsOpen, setDimsOpen, sp
 				}),
 				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Card, {
 					title: "仓位配比 · V2",
-					children: historical && !scored ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+					children: card.longPct == null || card.shortPct == null ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 						className: "text-xs leading-relaxed text-[#b7b0a6]",
-						children: statsPending ? "涨跌家数正在取，取到之前不给仓位。" : "这一天的涨跌家数没有取到，不给仓位。"
+						children: statsPending ? "涨跌家数正在取，取到之前不给仓位。" : `${card.positionNote}。`
 					}) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
 						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(BarRow, {
 							label: "长线",
-							pct: card.longPct
+							pct: card.longPct ?? 0
 						}),
 						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(BarRow, {
 							label: "短线",
-							pct: card.shortPct
+							pct: card.shortPct ?? 0
 						}),
 						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
 							className: "num text-xs text-[#d9d3c8]",
 							children: [
 								"合计 ",
-								card.longPct + card.shortPct,
+								(card.longPct ?? 0) + (card.shortPct ?? 0),
 								"% · 现金 ",
 								cash,
 								"% · 包络≤",
-								card.longPct + card.shortPct,
+								(card.longPct ?? 0) + (card.shortPct ?? 0),
 								"%"
 							]
 						}),
@@ -2150,9 +2182,9 @@ function Risk({ data, card, cash, reading, historical }) {
 		children: [
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Card, {
 				title: "仓位配比 · V2",
-				children: historical && (data.emotion?.up ?? 0) + (data.emotion?.down ?? 0) === 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				children: card.longPct == null || card.shortPct == null || cash == null ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
 					className: "text-sm leading-relaxed text-[#b7b0a6]",
-					children: "这一天的涨跌家数还没到，先不给仓位。"
+					children: [card.positionNote, "。"]
 				}) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
 					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(BarRow, {
 						label: "长线",
@@ -2234,7 +2266,7 @@ function Risk({ data, card, cash, reading, historical }) {
 		]
 	});
 }
-function Mood({ data, card, stats }) {
+function Mood({ data, card, stats, boards }) {
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 		className: "grid gap-3 lg:grid-cols-2",
 		children: [
@@ -2270,8 +2302,8 @@ function Mood({ data, card, stats }) {
 				]
 			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Card, {
-				title: stats?.boards ? `连板个股 ${stats.boards.length} 只` : "连板个股",
-				children: stats?.boards?.length ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(BoardList, { boards: stats.boards }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				title: boards?.boards ? `连板个股 ${boards.boards.length} 只` : "连板个股",
+				children: boards?.boards?.length ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(BoardList, { boards: boards.boards }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 					className: "text-xs text-[#8d877d]",
 					children: stats ? "这一天没有连板。" : "连板名单正在取。"
 				})
@@ -2421,9 +2453,23 @@ function Detail({ data, card, reading }) {
 			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Card, {
 				title: "复盘原话",
 				children: [
+					data.author?.excerpt || data.author?.verdict ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+						className: "text-[11px] text-[#8d877d]",
+						children: "原文摘录"
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+						className: "text-sm leading-relaxed",
+						children: data.author.excerpt || data.author.verdict
+					})] }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+						className: "text-sm leading-relaxed text-[#b7b0a6]",
+						children: "这一天没有取到作者原文。"
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+						className: "text-[11px] text-[#8d877d]",
+						children: "系统解读"
+					}),
 					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 						className: "text-sm leading-relaxed",
-						children: data.author?.excerpt || data.author?.verdict || reading.headline
+						children: reading.headline
 					}),
 					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 						className: "text-xs leading-relaxed text-[#8d877d]",
@@ -2457,34 +2503,34 @@ function applyBrief(desk, brief, basket) {
 		feed: brief.items.length > 0 ? brief.items : desk.feed
 	};
 	const market = brief.market;
-	if (!market) return next;
-	const limitUp = brief.stats?.limitUp ?? market.limitUp ?? 0;
-	const limitDown = brief.stats?.limitDown ?? market.limitDown ?? 0;
 	const hs = basket && basket.day === brief.day ? basket : null;
+	if (!market && !hs) return next;
+	const limitUp = brief.stats?.limitUp ?? market?.limitUp ?? null;
+	const limitDown = brief.stats?.limitDown ?? market?.limitDown ?? null;
 	return {
 		...next,
-		emotion: {
+		emotion: market ? {
 			date: brief.day,
 			up: market.up,
 			down: market.down,
 			flat: market.flat,
 			limitUp,
 			limitDown
-		},
+		} : desk.emotion,
 		leaders: hs?.leaders ?? [],
 		laggards: hs?.laggards ?? [],
-		breadth: {
-			tup: hs?.hsUp ?? 0,
-			tdn: hs?.hsDown ?? 0,
+		breadth: hs ? {
+			tup: hs.hsUp,
+			tdn: hs.hsDown,
 			t5u: 0,
 			t5d: 0,
 			d50: 0,
 			u05: 0,
-			flat: hs?.hsFlat ?? 0,
-			missing: hs ? 0 : 300,
-			total: hs ? hs.hsUp + hs.hsDown + hs.hsFlat : 0
-		},
-		warnings: [`${brief.day} 收盘回放。全市场上涨 ${market.up}、下跌 ${market.down}${hs ? `，沪深300成分上涨 ${hs.hsUp}、下跌 ${hs.hsDown}` : "，沪深300成分还在回看"}。涨跌家数是全市场公开统计。沪深300按当前成分回看这一天的涨跌，不是从复盘句子里摘的。`]
+			flat: hs.hsFlat,
+			missing: 0,
+			total: hs.hsUp + hs.hsDown + hs.hsFlat
+		} : desk.breadth,
+		warnings: [`${brief.day} 收盘回放。${market ? `全市场上涨 ${market.up}、下跌 ${market.down}` : "全市场涨跌家数没有取到"}${hs ? `，沪深300成分上涨 ${hs.hsUp}、下跌 ${hs.hsDown}` : "，沪深300成分还在回看"}。涨跌家数是全市场公开统计。沪深300按当前成分回看这一天的涨跌，不是从复盘句子里摘的。`]
 	};
 }
 function BoardList({ boards }) {
@@ -2568,12 +2614,12 @@ function BarRow({ label, pct }) {
 				className: "h-2 flex-1 overflow-hidden rounded-full bg-[#2a2a30]",
 				children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 					className: "block h-full bg-[#a87888]",
-					style: { width: `${pct}%` }
+					style: { width: `${pct ?? 0}%` }
 				})
 			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 				className: "num w-10 text-right",
-				children: [pct, "%"]
+				children: pct == null ? "—" : `${pct}%`
 			})
 		]
 	});
@@ -2800,6 +2846,7 @@ function DeskView({ initial, tab, day }) {
 	const [data, setData] = (0, import_react.useState)(initial);
 	const [pending, setPending] = (0, import_react.useState)(false);
 	const [error, setError] = (0, import_react.useState)(null);
+	const [pulse, setPulse] = (0, import_react.useState)(0);
 	const [stealth, setStealth] = (0, import_react.useState)(false);
 	(0, import_react.useEffect)(() => {
 		setStealth(window.localStorage.getItem(STEALTH_KEY) === "1");
@@ -2812,6 +2859,7 @@ function DeskView({ initial, tab, day }) {
 				const next = await getDesk();
 				if (alive) {
 					setData((prev) => keepTape(prev, next));
+					setPulse((value) => value + 1);
 					setError(null);
 				}
 			} catch {
@@ -2829,6 +2877,7 @@ function DeskView({ initial, tab, day }) {
 		try {
 			const next = await getDesk();
 			setData((prev) => keepTape(prev, next));
+			setPulse((value) => value + 1);
 			setError(null);
 		} catch {
 			setError("刷新没有成功，仍显示上一笔");
@@ -2882,6 +2931,7 @@ function DeskView({ initial, tab, day }) {
 		error: error ?? (data.warnings.length ? data.warnings.join("；") : null),
 		tab,
 		day,
+		pulse,
 		onRefresh: () => void refresh(),
 		onStealth: toggleStealth
 	});

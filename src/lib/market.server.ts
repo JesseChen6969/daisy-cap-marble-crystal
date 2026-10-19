@@ -22,6 +22,7 @@ import type {
   Quote,
   TapePoint,
 } from "./market.types";
+import { shanghaiParts } from "./zones";
 
 const UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36";
@@ -61,6 +62,11 @@ const BREADTH_TTL = 20_000;
 const COMPONENT_TTL = 20_000;
 const RSS_TTL = 10 * 60_000;
 const REPORT_TTL = 30 * 60_000;
+
+function shanghaiToday(now = new Date()): string {
+  const parts = shanghaiParts(now);
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
 const DIRECT_REVIEWS = ["https://mp.weixin.qq.com/s/inX28XwEokfS6ZVX3IxQGw"];
 const directNotes = new Map<string, { verdict: string; excerpt: string; amountWanYi: number | null }>();
 
@@ -525,21 +531,24 @@ async function loadHotBoardOnce(): Promise<Desk["boardLead"]> {
   return { name: top.name, pct: top.pct, share: pos > 0 ? (top.pct / pos) * 100 : 0 };
 }
 
-async function loadEmotion(): Promise<Emotion> {
+async function loadEmotion(): Promise<Emotion | null> {
   const buf = await fetchBuffer(
     "https://push2ex.eastmoney.com/getTopicZDFenBu?ut=7eea3edcaed734bea9cbfc24409ed989&dpt=wz.ztzt",
     "https://quote.eastmoney.com/",
   );
   const json = JSON.parse(decode(buf, "utf-8")) as {
-    data?: { qdate?: number; fenbu?: Array<Record<string, number>> };
+    data?: { qdate?: number; fenbu?: Array<Record<string, number>> } | null;
   };
+  if (!json.data?.fenbu?.length) return null;
   const buckets: Record<string, number> = {};
-  for (const item of json.data?.fenbu ?? []) Object.assign(buckets, item);
+  for (const item of json.data.fenbu) Object.assign(buckets, item);
   const value = (key: string) => buckets[key] ?? 0;
   const up = Object.entries(buckets).reduce((sum, [key, count]) => (Number(key) > 0 ? sum + count : sum), 0);
   const down = Object.entries(buckets).reduce((sum, [key, count]) => (Number(key) < 0 ? sum + count : sum), 0);
-  const raw = String(json.data?.qdate ?? "");
+  if (up + down <= 0) return null;
+  const raw = String(json.data.qdate ?? "");
   const date = raw.length === 8 ? `${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6)}` : raw;
+  if (!date) return null;
   return { date, up, down, flat: value("0"), limitUp: value("11"), limitDown: value("-11") };
 }
 
@@ -574,14 +583,16 @@ async function loadAuthor(): Promise<AuthorNote | null> {
   };
 }
 
-function unescapeHtml(value: string): string {
-  return value
-    .replace(/&/g, "&")
-    .replace(/</g, "<")
-    .replace(/>/g, ">")
-    .replace(/"/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&nbsp;/g, " ");
+export function unescapeHtml(value: string): string {
+  const named: Record<string, string> = { nbsp: " ", quot: '"', lt: "<", gt: ">", amp: "&" };
+  return value.replace(/&(#x?[0-9a-f]+|[a-z]+);/gi, (entity, body: string) => {
+    if (body.startsWith("#")) {
+      const hex = body[1] === "x" || body[1] === "X";
+      const code = hex ? Number.parseInt(body.slice(2), 16) : Number(body.slice(1));
+      return Number.isFinite(code) ? String.fromCodePoint(code) : entity;
+    }
+    return named[body.toLowerCase()] ?? entity;
+  });
 }
 
 function reviewText(html: string): { verdict: string; excerpt: string; amountWanYi: number | null } {
@@ -631,7 +642,8 @@ export async function loadDayBrief(day: string): Promise<DayBrief> {
   const empty: DayBrief = { day, author: null, items: [], amountWanYi: null, stats: null, market: null };
   if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return empty;
   const hit = briefCache.get(day);
-  if (hit && Date.now() - hit.at < BRIEF_TTL) return hit.data;
+  const briefTtl = day === shanghaiToday() ? 20_000 : BRIEF_TTL;
+  if (hit && Date.now() - hit.at < briefTtl) return hit.data;
   const statsPromise = loadDayStats(day);
   const marketPromise = loadDayMarket(day);
   let rss: ArchiveItem[] = [];
@@ -1186,6 +1198,40 @@ function countsOf(items: ArchiveItem[]): ArchivePayload["counts"] {
   return counts;
 }
 
+export function selectArchive(
+  rss: ArchiveItem[],
+  reports: ArchiveItem[],
+  input: { q: string; source: ArchiveSource; limit: number },
+): ArchivePayload {
+  const all = rankArchive([...rss, ...reports]);
+  const q = input.q.trim().toLowerCase();
+  const filtered = all.filter((item) => {
+    if (input.source === "review" && item.kind !== "review") return false;
+    if (input.source === "intel" && item.kind !== "intel") return false;
+    if (input.source === "report" && item.kind !== "report") return false;
+    if (!q) return true;
+    return `${item.title} ${item.summary} ${item.tag}`.toLowerCase().includes(q);
+  });
+  return {
+    items: filtered.slice(0, input.limit),
+    matched: filtered.length,
+    hasMore: filtered.length > input.limit,
+    counts: countsOf(all),
+    warning: null,
+  };
+}
+
+function rankArchive(items: ArchiveItem[]): ArchiveItem[] {
+  const seen = new Set<string>();
+  return [...items]
+    .sort((a, b) => b.time - a.time || a.title.localeCompare(b.title, "zh"))
+    .filter((item) => {
+      if (seen.has(item.link)) return false;
+      seen.add(item.link);
+      return true;
+    });
+}
+
 export async function loadFeed(input: {
   q: string;
   source: ArchiveSource;
@@ -1207,21 +1253,8 @@ export async function loadFeed(input: {
       warnings.push("历史研报暂时没有取到");
     }
   }
-  const all = [...rss, ...reports];
-  const q = input.q.trim().toLowerCase();
-  const filtered = all.filter((item) => {
-    if (input.source === "review" && item.kind !== "review") return false;
-    if (input.source === "intel" && item.kind !== "intel") return false;
-    if (input.source === "report" && item.kind !== "report") return false;
-    if (!q) return true;
-    return `${item.title} ${item.summary} ${item.tag}`.toLowerCase().includes(q);
-  });
-  return {
-    items: filtered.slice(0, input.limit),
-    matched: filtered.length,
-    counts: countsOf(all),
-    warning: warnings.length ? warnings.join("；") : null,
-  };
+  const picked = selectArchive(rss, reports, input);
+  return { ...picked, warning: warnings.length ? warnings.join("；") : null };
 }
 
 function indicatorsFrom(
@@ -1323,7 +1356,9 @@ export async function loadDesk(): Promise<Desk> {
   if (seriesRes.status === "rejected" || (seriesRes.status === "fulfilled" && seriesRes.value.tape.length === 0)) {
     warnings.push("走势没有取到");
   }
-  if (emotionRes.status === "rejected") warnings.push("全市场涨跌家数没有取到");
+  if (emotionRes.status === "rejected" || (emotionRes.status === "fulfilled" && emotionRes.value == null)) {
+    warnings.push("全市场涨跌家数没有取到");
+  }
   if (marginRes.status === "rejected") warnings.push("融资余额没有取到");
   const slim = (quote: Quote): LadderQuote => ({
     code: quote.code,
@@ -1344,6 +1379,17 @@ export async function loadDesk(): Promise<Desk> {
     if (feedRes.value.warning) warnings.push(feedRes.value.warning);
   } else warnings.push("档案暂时没有取到");
 
+  const tape = seriesRes.status === "fulfilled" ? seriesRes.value.tape : [];
+  let emotion = emotionRes.status === "fulfilled" ? emotionRes.value : null;
+  const quoteDate = (sh.date || hs300.date || "").slice(0, 10);
+  if (emotion && quoteDate && emotion.date !== quoteDate) {
+    warnings.push(`涨跌家数停在 ${emotion.date || "空日期"}，和行情 ${quoteDate} 不是同一天，不拿来评分`);
+    emotion = null;
+  }
+  const lastBar = tape[tape.length - 1]?.date ?? "";
+  if (lastBar && quoteDate && lastBar !== quoteDate) {
+    warnings.push(`K 线停在 ${lastBar}，行情日期是 ${quoteDate}。当天分数只写在行情这一天，不回写到上一根 K 线`);
+  }
   const ranked = rows.filter((row) => row.pct != null).sort((a, b) => (b.pct ?? 0) - (a.pct ?? 0));
   const desk: Desk = {
     asOf: Date.now(),
@@ -1359,8 +1405,8 @@ export async function loadDesk(): Promise<Desk> {
     laggards: ranked.slice(-6).reverse(),
     series: seriesRes.status === "fulfilled" ? seriesRes.value.hs300 : [],
     shSeries: seriesRes.status === "fulfilled" ? seriesRes.value.sh : [],
-    tape: seriesRes.status === "fulfilled" ? seriesRes.value.tape : [],
-    emotion: emotionRes.status === "fulfilled" ? emotionRes.value : null,
+    tape,
+    emotion,
     ladder,
     brokers: slim(indexQuote("399975", "证券公司", sina.sz399975)),
     margin: marginRes.status === "fulfilled" ? marginRes.value : [],

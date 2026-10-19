@@ -48,6 +48,7 @@ export function TerminalView({
   data,
   tab,
   day,
+  pulse = 0,
   pending,
   error,
   onRefresh,
@@ -56,6 +57,7 @@ export function TerminalView({
   data: Desk;
   tab: DeskTab;
   day?: string;
+  pulse?: number;
   pending: boolean;
   error: string | null;
   onRefresh: () => void;
@@ -104,7 +106,7 @@ export function TerminalView({
     return () => {
       alive = false;
     };
-  }, [selected]);
+  }, [selected, pulse]);
   useEffect(() => {
     if (!historical || !selected) return;
     let alive = true;
@@ -122,14 +124,15 @@ export function TerminalView({
     return () => {
       alive = false;
     };
-  }, [historical, selected]);
+  }, [historical, selected, pulse]);
   const basketReady = basketDay === selected;
   const shown = useMemo(() => {
     if (!historical || !brief || brief.day !== selected) return view.desk;
     return applyBrief(view.desk, brief, basketReady ? basket : null);
   }, [view.desk, historical, brief, selected, basket, basketReady]);
   const briefMatch = brief?.day === selected;
-  const stats = briefMatch ? (brief?.stats ?? null) : null;
+  const stats = historical && briefMatch ? (brief?.stats ?? null) : null;
+  const liveStats = !historical && briefMatch ? (brief?.stats ?? null) : null;
   const statsPending = historical && !briefMatch;
   const briefReady = historical && briefMatch;
   const card = useMemo(() => scoreDesk(shown), [shown]);
@@ -137,7 +140,10 @@ export function TerminalView({
   const phase = marketPhase();
   const closed = phase.phase === "closed" || phase.phase === "weekend" || phase.phase === "lunch";
   const quoteTime = historical ? "收盘" : (data.sh.time || data.hs300.time || "").slice(0, 5) || "—";
-  const cash = 100 - card.longPct - card.shortPct;
+  const longPct = card.longPct;
+  const shortPct = card.shortPct;
+  const positioned = longPct != null && shortPct != null;
+  const cash = positioned ? 100 - longPct - shortPct : null;
 
   function chooseDay(next: string) {
     const value = !next || next === liveDate ? undefined : next;
@@ -206,7 +212,7 @@ export function TerminalView({
             </span>
             <span className="rounded-full bg-black/25 px-2 py-1">{historical ? "收盘回放" : `数据 ${quoteTime}`}</span>
             <span className="rounded-full bg-black/25 px-2 py-1">
-              {historical ? (shown.emotion ? "评分: 收盘重算" : "评分: 收盘路径") : "评分: 现算"}
+              {historical ? (shown.emotion ? "六维: 当天重算" : "六维: 数据不足") : "六维: 现算"} · 曲线: 路径分
             </span>
             <button
               type="button"
@@ -257,13 +263,14 @@ export function TerminalView({
             historical={historical}
             reading={reading}
             stats={stats}
+            boards={stats ?? liveStats}
             statsPending={statsPending}
             statsReady={briefMatch}
             basketReady={basketReady}
           />
         ) : null}
         {tab === "risk" ? <Risk data={shown} card={card} cash={cash} reading={reading} historical={historical} /> : null}
-        {tab === "mood" ? <Mood data={shown} card={card} stats={stats} /> : null}
+        {tab === "mood" ? <Mood data={shown} card={card} stats={stats} boards={stats ?? liveStats} /> : null}
         {tab === "detail" ? <Detail data={shown} card={card} reading={reading} /> : null}
       </div>
     </div>
@@ -361,13 +368,14 @@ function Overview({
   historical,
   reading,
   stats,
+  boards,
   statsPending,
   statsReady,
   basketReady,
 }: {
   data: Desk;
   card: ReturnType<typeof scoreDesk>;
-  cash: number;
+  cash: number | null;
   frame: Frame;
   setFrame: (frame: Frame) => void;
   dimsOpen: boolean;
@@ -377,6 +385,7 @@ function Overview({
   historical: boolean;
   reading: Reading;
   stats: DayStats | null;
+  boards: DayStats | null;
   statsPending: boolean;
   statsReady: boolean;
   basketReady: boolean;
@@ -393,7 +402,7 @@ function Overview({
   const sessionPoint = card.series[card.series.length - 1];
   const scored = (data.emotion?.up ?? 0) + (data.emotion?.down ?? 0) > 0;
   const faceRate = historical && !scored && sessionPoint ? sessionPoint.rate : card.rate;
-  const faceBand = historical && !scored ? (faceRate >= 60 ? "做多" : faceRate >= 40 ? "一般" : "观望") : card.band;
+  const faceBand = historical && !scored ? "不给仓位" : card.band;
   return (
     <>
       <div className="grid items-start gap-3 lg:grid-cols-[280px_minmax(0,1fr)]">
@@ -577,8 +586,8 @@ function Overview({
           <p className="mt-1 text-[11px] text-[#6f6a62]">
             日K · {from} 至 {to} · {shown.length} 个交易日
             {historical || to !== newest
-              ? " · 按指数涨跌近似，不是六维现算"
-              : " · 当日为六维现算，更早用指数路径近似"}
+              ? " · 整段都是指数路径分，买卖点只按这套算法"
+              : " · 整段都是指数路径分，买卖点只按这套算法。上面的百分比是当天六维分，不回写到曲线"}
             {" · 全A为沪深300与中证1000等权"}
           </p>
           {frame === "intra" ? (
@@ -755,8 +764,8 @@ function Overview({
             <Row
               k="最高标"
               v={
-                stats?.boards?.length
-                  ? `${stats.boards[0]?.label ?? ""} ${stats.boards[0]?.name ?? ""} · 连板 ${stats.boards.length} 只`
+                boards?.boards?.length
+                  ? `${boards.boards[0]?.label ?? ""} ${boards.boards[0]?.name ?? ""} · 连板 ${boards.boards.length} 只`
                   : historical
                     ? stats
                       ? `${stats.highBoard ?? "没有连板"} · 涨停 ${stats.limitUp} · 炸板 ${stats.broken}`
@@ -767,10 +776,10 @@ function Overview({
                       ? "涨停家数没有取到"
                       : !statsReady
                         ? `涨停 ${card.limitUp} 家 · 连板正在取`
-                        : `涨停 ${card.limitUp} 家 · ${stats ? "这一天没有连板" : "连板没有取到"}`
+                        : `涨停 ${card.limitUp} 家 · ${boards ? "这一天没有连板" : "连板没有取到"}`
               }
             />
-            {stats?.boards?.length ? <BoardList boards={stats.boards} /> : null}
+            {boards?.boards?.length ? <BoardList boards={boards.boards} /> : null}
             <Row
               k="涨跌情绪"
               v={
@@ -806,16 +815,16 @@ function Overview({
             </p>
           </Card>
           <Card title="仓位配比 · V2">
-            {historical && !scored ? (
+            {card.longPct == null || card.shortPct == null ? (
               <p className="text-xs leading-relaxed text-[#b7b0a6]">
-                {statsPending ? "涨跌家数正在取，取到之前不给仓位。" : "这一天的涨跌家数没有取到，不给仓位。"}
+                {statsPending ? "涨跌家数正在取，取到之前不给仓位。" : `${card.positionNote}。`}
               </p>
             ) : (
               <>
-            <BarRow label="长线" pct={card.longPct} />
-            <BarRow label="短线" pct={card.shortPct} />
+            <BarRow label="长线" pct={card.longPct ?? 0} />
+            <BarRow label="短线" pct={card.shortPct ?? 0} />
             <p className="num text-xs text-[#d9d3c8]">
-              合计 {card.longPct + card.shortPct}% · 现金 {cash}% · 包络≤{card.longPct + card.shortPct}%
+              合计 {(card.longPct ?? 0) + (card.shortPct ?? 0)}% · 现金 {cash}% · 包络≤{(card.longPct ?? 0) + (card.shortPct ?? 0)}%
             </p>
             <p className="text-[11px] text-[#8d877d]">{card.positionNote}。这是建议姿态，不是账户持仓。</p>
               </>
@@ -836,15 +845,15 @@ function Risk({
 }: {
   data: Desk;
   card: ReturnType<typeof scoreDesk>;
-  cash: number;
+  cash: number | null;
   reading: ReturnType<typeof readMarket>;
   historical: boolean;
 }) {
   return (
     <div className="grid gap-3 lg:grid-cols-2">
       <Card title="仓位配比 · V2">
-        {historical && (data.emotion?.up ?? 0) + (data.emotion?.down ?? 0) === 0 ? (
-          <p className="text-sm leading-relaxed text-[#b7b0a6]">这一天的涨跌家数还没到，先不给仓位。</p>
+        {card.longPct == null || card.shortPct == null || cash == null ? (
+          <p className="text-sm leading-relaxed text-[#b7b0a6]">{card.positionNote}。</p>
         ) : (
           <>
         <BarRow label="长线" pct={card.longPct} />
@@ -888,7 +897,7 @@ function Risk({
   );
 }
 
-function Mood({ data, card, stats }: { data: Desk; card: ReturnType<typeof scoreDesk>; stats: DayStats | null }) {
+function Mood({ data, card, stats, boards }: { data: Desk; card: ReturnType<typeof scoreDesk>; stats: DayStats | null; boards: DayStats | null }) {
   return (
     <div className="grid gap-3 lg:grid-cols-2">
       <Card title="涨跌情绪">
@@ -910,9 +919,9 @@ function Mood({ data, card, stats }: { data: Desk; card: ReturnType<typeof score
           }
         />
       </Card>
-      <Card title={stats?.boards ? `连板个股 ${stats.boards.length} 只` : "连板个股"}>
-        {stats?.boards?.length ? (
-          <BoardList boards={stats.boards} />
+      <Card title={boards?.boards ? `连板个股 ${boards.boards.length} 只` : "连板个股"}>
+        {boards?.boards?.length ? (
+          <BoardList boards={boards.boards} />
         ) : (
           <p className="text-xs text-[#8d877d]">{stats ? "这一天没有连板。" : "连板名单正在取。"}</p>
         )}
@@ -1011,7 +1020,16 @@ function Detail({
         )}
       </Card>
       <Card title="复盘原话">
-        <p className="text-sm leading-relaxed">{data.author?.excerpt || data.author?.verdict || reading.headline}</p>
+        {data.author?.excerpt || data.author?.verdict ? (
+          <>
+            <p className="text-[11px] text-[#8d877d]">原文摘录</p>
+            <p className="text-sm leading-relaxed">{data.author.excerpt || data.author.verdict}</p>
+          </>
+        ) : (
+          <p className="text-sm leading-relaxed text-[#b7b0a6]">这一天没有取到作者原文。</p>
+        )}
+        <p className="text-[11px] text-[#8d877d]">系统解读</p>
+        <p className="text-sm leading-relaxed">{reading.headline}</p>
         <p className="text-xs leading-relaxed text-[#8d877d]">{reading.detail}</p>
         {data.author ? (
           <a href={data.author.link} target="_blank" rel="noreferrer" className="text-xs text-[#e6c36a]">
@@ -1039,37 +1057,41 @@ function applyBrief(desk: Desk, brief: DayBrief, basket: DayBasket | null): Desk
     feed: brief.items.length > 0 ? brief.items : desk.feed,
   };
   const market = brief.market;
-  if (!market) return next;
-  const limitUp = brief.stats?.limitUp ?? market.limitUp ?? 0;
-  const limitDown = brief.stats?.limitDown ?? market.limitDown ?? 0;
   const hs = basket && basket.day === brief.day ? basket : null;
+  if (!market && !hs) return next;
+  const limitUp = brief.stats?.limitUp ?? market?.limitUp ?? null;
+  const limitDown = brief.stats?.limitDown ?? market?.limitDown ?? null;
   return {
     ...next,
-    emotion: {
-      date: brief.day,
-      up: market.up,
-      down: market.down,
-      flat: market.flat,
-      limitUp,
-      limitDown,
-    },
+    emotion: market
+      ? {
+          date: brief.day,
+          up: market.up,
+          down: market.down,
+          flat: market.flat,
+          limitUp,
+          limitDown,
+        }
+      : desk.emotion,
     leaders: hs?.leaders ?? [],
     laggards: hs?.laggards ?? [],
-    breadth: {
-      tup: hs?.hsUp ?? 0,
-      tdn: hs?.hsDown ?? 0,
-      t5u: 0,
-      t5d: 0,
-      d50: 0,
-      u05: 0,
-      flat: hs?.hsFlat ?? 0,
-      missing: hs ? 0 : 300,
-      total: hs ? hs.hsUp + hs.hsDown + hs.hsFlat : 0,
-    },
+    breadth: hs
+      ? {
+          tup: hs.hsUp,
+          tdn: hs.hsDown,
+          t5u: 0,
+          t5d: 0,
+          d50: 0,
+          u05: 0,
+          flat: hs.hsFlat,
+          missing: 0,
+          total: hs.hsUp + hs.hsDown + hs.hsFlat,
+        }
+      : desk.breadth,
     warnings: [
-      `${brief.day} 收盘回放。全市场上涨 ${market.up}、下跌 ${market.down}${
-        hs ? `，沪深300成分上涨 ${hs.hsUp}、下跌 ${hs.hsDown}` : "，沪深300成分还在回看"
-      }。涨跌家数是全市场公开统计。沪深300按当前成分回看这一天的涨跌，不是从复盘句子里摘的。`,
+      `${brief.day} 收盘回放。${
+        market ? `全市场上涨 ${market.up}、下跌 ${market.down}` : "全市场涨跌家数没有取到"
+      }${hs ? `，沪深300成分上涨 ${hs.hsUp}、下跌 ${hs.hsDown}` : "，沪深300成分还在回看"}。涨跌家数是全市场公开统计。沪深300按当前成分回看这一天的涨跌，不是从复盘句子里摘的。`,
     ],
   };
 }
@@ -1144,14 +1166,15 @@ function Row({ k, v, hot, gold }: { k: string; v: string; hot?: boolean; gold?: 
   );
 }
 
-function BarRow({ label, pct }: { label: string; pct: number }) {
+function BarRow({ label, pct }: { label: string; pct: number | null }) {
+  const width = pct ?? 0;
   return (
     <div className="flex items-center gap-2 text-xs">
       <span className="w-8 text-[#8d877d]">{label}</span>
       <span className="h-2 flex-1 overflow-hidden rounded-full bg-[#2a2a30]">
-        <span className="block h-full bg-[#a87888]" style={{ width: `${pct}%` }} />
+        <span className="block h-full bg-[#a87888]" style={{ width: `${width}%` }} />
       </span>
-      <span className="num w-10 text-right">{pct}%</span>
+      <span className="num w-10 text-right">{pct == null ? "—" : `${pct}%`}</span>
     </div>
   );
 }

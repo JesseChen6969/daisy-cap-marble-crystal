@@ -3,9 +3,10 @@ import { C as require_jsx_runtime, S as useRouter, X as require_react, _ as lazy
 import { n as TSS_SERVER_FUNCTION, r as getServerFnById, t as createServerFn } from "./ssr.mjs";
 import { t as clsx } from "../_libs/clsx.mjs";
 import { t as twMerge } from "../_libs/tailwind-merge.mjs";
+import { i as marketPhase, r as clockLabel } from "./zones-B6a6YmcZ.mjs";
 import { a as Library, o as LayoutDashboard, r as Rows3, s as BookOpen, t as TriangleAlert } from "../_libs/lucide-react.mjs";
 import { a as union, i as string, n as number, r as object, t as literal } from "../_libs/zod.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/market.functions-CKri5eOD.js
+//#region node_modules/.nitro/vite/services/ssr/assets/market.functions-ByE295bh.js
 function cn(...inputs) {
 	return twMerge(clsx(inputs));
 }
@@ -40,11 +41,11 @@ var getArchive = createServerFn({ method: "GET" }).validator((input) => {
 	return {
 		q: typeof raw.q === "string" ? raw.q.slice(0, 80) : "",
 		source: SOURCES.includes(raw.source) ? raw.source : "all",
-		limit: typeof raw.limit === "number" && Number.isFinite(raw.limit) ? Math.min(120, Math.max(12, Math.floor(raw.limit))) : 24
+		limit: typeof raw.limit === "number" && Number.isFinite(raw.limit) ? Math.min(2e3, Math.max(12, Math.floor(raw.limit))) : 24
 	};
 }).handler(createSsrRpc("036137cac849e54bc853cabc089824e88b3876ea1cd5d1cb988b1e0504be5a53"));
 //#endregion
-//#region node_modules/.nitro/vite/services/ssr/assets/router-l1efmoVl.js
+//#region node_modules/.nitro/vite/services/ssr/assets/router-S3TS0AuP.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var __defProp = Object.defineProperty;
@@ -382,164 +383,6 @@ function PreviewHostBridge() {
 	}, [router]);
 	return null;
 }
-var INDICATORS = {
-	bs: {
-		abbr: "bs",
-		name: "基差",
-		unit: "点",
-		hint: "沪深300现货减去沪深加权期货。低于 -5 红区，-5 到 5 橙区，高于 5 绿区。",
-		lo: -5,
-		hi: 5,
-		colors: [
-			"red",
-			"orange",
-			"green"
-		],
-		digits: 2
-	},
-	uc: {
-		abbr: "uc",
-		name: "离岸人民币",
-		unit: "",
-		hint: "美元兑离岸人民币。低于 7 红区，7 到 7.1 橙区，高于 7.1 绿区。",
-		lo: 7,
-		hi: 7.1,
-		colors: [
-			"red",
-			"orange",
-			"green"
-		],
-		digits: 4
-	},
-	hk: {
-		abbr: "hk",
-		name: "恒生科技",
-		unit: "%",
-		hint: "恒生科技涨跌幅。低于 -1.5% 绿区，-1.5% 到 1% 橙区，高于 1% 红区。",
-		lo: -1.5,
-		hi: 1,
-		colors: [
-			"green",
-			"orange",
-			"red"
-		],
-		digits: 2
-	},
-	av: {
-		abbr: "av",
-		name: "沪深成交",
-		unit: "万亿",
-		hint: "上证成交额加深证 A 指成交额，单位万亿。原浮动窗三档都用深色。",
-		lo: 1,
-		hi: 2,
-		colors: [
-			"ink",
-			"ink",
-			"ink"
-		],
-		digits: 2
-	},
-	cn10: {
-		abbr: "cn10",
-		name: "十年国债",
-		unit: "%",
-		hint: "十年国债 ETF 涨跌幅。低于 -0.01% 红区，区间内橙区，高于 0.01% 绿区。",
-		lo: -.01,
-		hi: .01,
-		colors: [
-			"red",
-			"orange",
-			"green"
-		],
-		digits: 3
-	}
-};
-var ZONE_ORDER = [
-	"bs",
-	"uc",
-	"hk",
-	"cn10",
-	"av"
-];
-function toneOf(key, value) {
-	if (value == null || !Number.isFinite(value)) return "ink";
-	const zone = INDICATORS[key];
-	if (value < zone.lo) return zone.colors[0];
-	if (value < zone.hi) return zone.colors[1];
-	return zone.colors[2];
-}
-function toneClass(tone) {
-	if (tone === "red") return "text-up";
-	if (tone === "orange") return "text-warn";
-	if (tone === "green") return "text-down";
-	return "text-paper";
-}
-function toneLabel(tone) {
-	if (tone === "red") return "红区";
-	if (tone === "orange") return "橙区";
-	if (tone === "green") return "绿区";
-	return "深色";
-}
-var WEEKDAY = {
-	Sun: "日",
-	Mon: "一",
-	Tue: "二",
-	Wed: "三",
-	Thu: "四",
-	Fri: "五",
-	Sat: "六"
-};
-function shanghaiParts(now = /* @__PURE__ */ new Date()) {
-	const fmt = new Intl.DateTimeFormat("en-US", {
-		timeZone: "Asia/Shanghai",
-		weekday: "short",
-		year: "numeric",
-		month: "2-digit",
-		day: "2-digit",
-		hour: "2-digit",
-		minute: "2-digit",
-		second: "2-digit",
-		hourCycle: "h23"
-	});
-	const map = {};
-	for (const part of fmt.formatToParts(now)) if (part.type !== "literal") map[part.type] = part.value;
-	if (map.hour === "24") map.hour = "00";
-	return map;
-}
-function marketPhase(now = /* @__PURE__ */ new Date()) {
-	const parts = shanghaiParts(now);
-	const weekday = parts.weekday ?? "";
-	if (weekday === "Sat" || weekday === "Sun") return {
-		phase: "weekend",
-		label: "周末休市"
-	};
-	const mins = Number(parts.hour) * 60 + Number(parts.minute);
-	if (mins >= 555 && mins < 570) return {
-		phase: "auction",
-		label: "集合竞价"
-	};
-	if (mins >= 570 && mins < 690) return {
-		phase: "morning",
-		label: "上午交易"
-	};
-	if (mins >= 690 && mins < 780) return {
-		phase: "lunch",
-		label: "午间休市"
-	};
-	if (mins >= 780 && mins < 900) return {
-		phase: "afternoon",
-		label: "下午交易"
-	};
-	return {
-		phase: "closed",
-		label: "已收盘"
-	};
-}
-function clockLabel(now = /* @__PURE__ */ new Date()) {
-	const parts = shanghaiParts(now);
-	const weekday = WEEKDAY[parts.weekday ?? ""] ?? "";
-	return `${parts.month}.${parts.day} 周${weekday} ${parts.hour}:${parts.minute}:${parts.second}`;
-}
 var NAV = [
 	{
 		to: "/",
@@ -708,7 +551,7 @@ function parseDeskDay(value) {
 	if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return void 0;
 	return value;
 }
-var $$splitComponentImporter$3 = () => import("./routes-xC-erSZc.mjs");
+var $$splitComponentImporter$3 = () => import("./routes-CBHz2F7P.mjs");
 var Route$3 = createFileRoute("/")({
 	validateSearch: (search) => ({
 		tab: parseDeskTab(search.tab),
@@ -719,7 +562,7 @@ var Route$3 = createFileRoute("/")({
 	head: () => ({ meta: [{ title: "鳄鱼派量化系统" }] }),
 	component: lazyRouteComponent($$splitComponentImporter$3, "component")
 });
-var $$splitComponentImporter$2 = () => import("./archive-EvEcrDjl.mjs");
+var $$splitComponentImporter$2 = () => import("./archive-CHA5I06n.mjs");
 var Route$2 = createFileRoute("/archive")({
 	loader: () => getArchive({ data: {
 		q: "",
@@ -729,13 +572,13 @@ var Route$2 = createFileRoute("/archive")({
 	head: () => ({ meta: [{ title: "档案 · 鳄鱼派看盘" }] }),
 	component: lazyRouteComponent($$splitComponentImporter$2, "component")
 });
-var $$splitComponentImporter$1 = () => import("./breadth-BkaYAdHB.mjs");
+var $$splitComponentImporter$1 = () => import("./breadth-DVpaAcZ5.mjs");
 var Route$1 = createFileRoute("/breadth")({
 	loader: () => getBreadth(),
 	head: () => ({ meta: [{ title: "涨跌 · 鳄鱼派看盘" }] }),
 	component: lazyRouteComponent($$splitComponentImporter$1, "component")
 });
-var $$splitComponentImporter = () => import("./method-CqKAePx1.mjs");
+var $$splitComponentImporter = () => import("./method-BjeBFEhn.mjs");
 var Route = createFileRoute("/method")({
 	head: () => ({ meta: [{ title: "口径 · 鳄鱼派看盘" }] }),
 	component: lazyRouteComponent($$splitComponentImporter, "component")
@@ -772,4 +615,4 @@ function getRouter() {
 	});
 }
 //#endregion
-export { getDesk as _, INDICATORS as a, shanghaiParts as c, toneOf as d, cn as f, getDayBrief as g, getDayBasket as h, Route$3 as i, toneClass as l, getBreadth as m, Route$1 as n, ZONE_ORDER as o, getArchive as p, Route$2 as r, marketPhase as s, router_exports as t, toneLabel as u };
+export { cn as a, getDayBasket as c, Route$3 as i, getDayBrief as l, Route$1 as n, getArchive as o, Route$2 as r, getBreadth as s, router_exports as t, getDesk as u };

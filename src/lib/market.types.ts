@@ -55,8 +55,8 @@ export type Emotion = {
   up: number;
   down: number;
   flat: number;
-  limitUp: number;
-  limitDown: number;
+  limitUp: number | null;
+  limitDown: number | null;
 };
 
 export type LadderQuote = {
@@ -217,6 +217,7 @@ export type ArchiveSource = "all" | "review" | "intel" | "report";
 export type ArchivePayload = {
   items: ArchiveItem[];
   matched: number;
+  hasMore: boolean;
   counts: { all: number; review: number; intel: number; report: number };
   warning: string | null;
 };

@@ -29,7 +29,7 @@ export const getArchive = createServerFn({ method: "GET" })
     const source = SOURCES.includes(raw.source as ArchiveSource) ? (raw.source as ArchiveSource) : "all";
     const limit =
       typeof raw.limit === "number" && Number.isFinite(raw.limit)
-        ? Math.min(120, Math.max(12, Math.floor(raw.limit)))
+        ? Math.min(2000, Math.max(12, Math.floor(raw.limit)))
         : 24;
     return { q, source, limit };
   })

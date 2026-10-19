@@ -86,7 +86,7 @@ export function BoardView({ data }: { data: Desk }) {
           <ForcePanel board={board} />
           <p className="px-1 text-xs leading-relaxed text-faint">
             势力 {fmt(board.forceSum, 0)} / {board.forceMax} · 格局 {board.pattern} ·{" "}
-            {data.emotion ? `跌停 ${data.emotion.limitDown}${data.emotion.limitDown <= 15 ? "，急跌不恐慌" : ""}` : "跌停未取到"}
+            {data.emotion?.limitDown != null ? `跌停 ${data.emotion.limitDown}${data.emotion.limitDown <= 15 ? "，急跌不恐慌" : ""}` : "跌停未取到"}
           </p>
         </aside>
 
@@ -132,16 +132,22 @@ export function BoardView({ data }: { data: Desk }) {
               <LineItem k="贴水" v={data.indicators.bs != null ? `基差 ${fmtSigned(data.indicators.bs, 0)} 点，不当右侧` : "—"} />
             </Brief>
             <Brief title="情绪面">
-              <LineItem k="涨停跌停" v={data.emotion ? `${data.emotion.limitUp} / ${data.emotion.limitDown}` : "没有取到"} />
+              <LineItem k="涨停跌停" v={data.emotion?.limitUp != null && data.emotion.limitDown != null ? `${data.emotion.limitUp} / ${data.emotion.limitDown}` : "没有取到"} />
               <LineItem k="上涨下跌" v={data.emotion ? `${data.emotion.up} / ${data.emotion.down}` : "—"} />
               <LineItem k="沪深300" v={`上涨 ${data.breadth.tup} · 下跌 ${data.breadth.tdn}`} />
               <LineItem k="周线" v={reading.spokes.find((item) => item.label === "周线")?.note ?? "—"} />
               <LineItem k="量能" v={reading.spokes.find((item) => item.label === "量能")?.note ?? "—"} />
             </Brief>
             <Brief title="仓位姿态">
+              {board.band === "数据不足" || data.emotion?.limitDown == null ? (
+                <p className="text-sm text-muted">涨跌或跌停没有取全，暂不可判断。</p>
+              ) : (
+                <>
               <p className="text-xs text-faint">这是复盘里的做法，不是账户仓位。</p>
               <Pose label="长线" width={board.band === "做多" ? 60 : board.band === "回避" ? 10 : 30} text="底仓，不空也不满" />
               <Pose label="短线" width={board.band === "做多" ? 40 : 0} text={board.band === "做多" ? "可以做，仍要快" : "右侧未齐，先不做"} />
+                </>
+              )}
               <p className="text-xs leading-relaxed text-muted">{reading.position}</p>
             </Brief>
           </section>

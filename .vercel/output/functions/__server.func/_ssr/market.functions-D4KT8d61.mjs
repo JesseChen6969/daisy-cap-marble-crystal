@@ -1,5 +1,6 @@
 import { n as TSS_SERVER_FUNCTION, t as createServerFn } from "./ssr.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/market.functions-5Ue6_8y9.js
+import { a as shanghaiParts } from "./zones-B6a6YmcZ.mjs";
+//#region node_modules/.nitro/vite/services/ssr/assets/market.functions-D4KT8d61.js
 var createServerRpc = (serverFnMeta, splitImportFn) => {
 	const url = "/_serverFn/" + serverFnMeta.id;
 	return Object.assign(splitImportFn, {
@@ -40,6 +41,10 @@ var BREADTH_TTL = 2e4;
 var COMPONENT_TTL = 2e4;
 var RSS_TTL = 6e5;
 var REPORT_TTL = 18e5;
+function shanghaiToday(now = /* @__PURE__ */ new Date()) {
+	const parts = shanghaiParts(now);
+	return `${parts.year}-${parts.month}-${parts.day}`;
+}
 var DIRECT_REVIEWS = ["https://mp.weixin.qq.com/s/inX28XwEokfS6ZVX3IxQGw"];
 var directNotes = /* @__PURE__ */ new Map();
 function num(value) {
@@ -475,14 +480,18 @@ async function loadHotBoardOnce() {
 async function loadEmotion() {
 	const buf = await fetchBuffer("https://push2ex.eastmoney.com/getTopicZDFenBu?ut=7eea3edcaed734bea9cbfc24409ed989&dpt=wz.ztzt", "https://quote.eastmoney.com/");
 	const json = JSON.parse(decode(buf, "utf-8"));
+	if (!json.data?.fenbu?.length) return null;
 	const buckets = {};
-	for (const item of json.data?.fenbu ?? []) Object.assign(buckets, item);
+	for (const item of json.data.fenbu) Object.assign(buckets, item);
 	const value = (key) => buckets[key] ?? 0;
 	const up = Object.entries(buckets).reduce((sum, [key, count]) => Number(key) > 0 ? sum + count : sum, 0);
 	const down = Object.entries(buckets).reduce((sum, [key, count]) => Number(key) < 0 ? sum + count : sum, 0);
-	const raw = String(json.data?.qdate ?? "");
+	if (up + down <= 0) return null;
+	const raw = String(json.data.qdate ?? "");
+	const date = raw.length === 8 ? `${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6)}` : raw;
+	if (!date) return null;
 	return {
-		date: raw.length === 8 ? `${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6)}` : raw,
+		date,
 		up,
 		down,
 		flat: value("0"),
@@ -510,7 +519,20 @@ async function loadAuthor() {
 	};
 }
 function unescapeHtml(value) {
-	return value.replace(/&/g, "&").replace(/</g, "<").replace(/>/g, ">").replace(/"/g, "\"").replace(/&#39;/g, "'").replace(/&nbsp;/g, " ");
+	const named = {
+		nbsp: " ",
+		quot: "\"",
+		lt: "<",
+		gt: ">",
+		amp: "&"
+	};
+	return value.replace(/&(#x?[0-9a-f]+|[a-z]+);/gi, (entity, body) => {
+		if (body.startsWith("#")) {
+			const code = body[1] === "x" || body[1] === "X" ? Number.parseInt(body.slice(2), 16) : Number(body.slice(1));
+			return Number.isFinite(code) ? String.fromCodePoint(code) : entity;
+		}
+		return named[body.toLowerCase()] ?? entity;
+	});
 }
 function reviewText(html) {
 	const art = html.match(/<article[\s\S]*?<\/article>/i)?.[0] ?? html;
@@ -562,7 +584,8 @@ async function loadDayBrief(day) {
 	};
 	if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return empty;
 	const hit = briefCache.get(day);
-	if (hit && Date.now() - hit.at < BRIEF_TTL) return hit.data;
+	const briefTtl = day === shanghaiToday() ? 2e4 : BRIEF_TTL;
+	if (hit && Date.now() - hit.at < briefTtl) return hit.data;
 	const statsPromise = loadDayStats(day);
 	const marketPromise = loadDayMarket(day);
 	let rss = [];
@@ -1094,6 +1117,32 @@ function countsOf(items) {
 	else if (item.kind === "report") counts.report += 1;
 	return counts;
 }
+function selectArchive(rss, reports, input) {
+	const all = rankArchive([...rss, ...reports]);
+	const q = input.q.trim().toLowerCase();
+	const filtered = all.filter((item) => {
+		if (input.source === "review" && item.kind !== "review") return false;
+		if (input.source === "intel" && item.kind !== "intel") return false;
+		if (input.source === "report" && item.kind !== "report") return false;
+		if (!q) return true;
+		return `${item.title} ${item.summary} ${item.tag}`.toLowerCase().includes(q);
+	});
+	return {
+		items: filtered.slice(0, input.limit),
+		matched: filtered.length,
+		hasMore: filtered.length > input.limit,
+		counts: countsOf(all),
+		warning: null
+	};
+}
+function rankArchive(items) {
+	const seen = /* @__PURE__ */ new Set();
+	return [...items].sort((a, b) => b.time - a.time || a.title.localeCompare(b.title, "zh")).filter((item) => {
+		if (seen.has(item.link)) return false;
+		seen.add(item.link);
+		return true;
+	});
+}
 async function loadFeed(input) {
 	const warnings = [];
 	let rss = [];
@@ -1108,19 +1157,8 @@ async function loadFeed(input) {
 	} catch {
 		warnings.push("历史研报暂时没有取到");
 	}
-	const all = [...rss, ...reports];
-	const q = input.q.trim().toLowerCase();
-	const filtered = all.filter((item) => {
-		if (input.source === "review" && item.kind !== "review") return false;
-		if (input.source === "intel" && item.kind !== "intel") return false;
-		if (input.source === "report" && item.kind !== "report") return false;
-		if (!q) return true;
-		return `${item.title} ${item.summary} ${item.tag}`.toLowerCase().includes(q);
-	});
 	return {
-		items: filtered.slice(0, input.limit),
-		matched: filtered.length,
-		counts: countsOf(all),
+		...selectArchive(rss, reports, input),
 		warning: warnings.length ? warnings.join("；") : null
 	};
 }
@@ -1208,7 +1246,7 @@ async function loadDesk() {
 	if (compRes.status === "fulfilled") rows = compRes.value;
 	else warnings.push("沪深300成分没有取到，涨跌家数先空着");
 	if (seriesRes.status === "rejected" || seriesRes.status === "fulfilled" && seriesRes.value.tape.length === 0) warnings.push("走势没有取到");
-	if (emotionRes.status === "rejected") warnings.push("全市场涨跌家数没有取到");
+	if (emotionRes.status === "rejected" || emotionRes.status === "fulfilled" && emotionRes.value == null) warnings.push("全市场涨跌家数没有取到");
 	if (marginRes.status === "rejected") warnings.push("融资余额没有取到");
 	const slim = (quote) => ({
 		code: quote.code,
@@ -1228,6 +1266,15 @@ async function loadDesk() {
 		feed = feedRes.value.items;
 		if (feedRes.value.warning) warnings.push(feedRes.value.warning);
 	} else warnings.push("档案暂时没有取到");
+	const tape = seriesRes.status === "fulfilled" ? seriesRes.value.tape : [];
+	let emotion = emotionRes.status === "fulfilled" ? emotionRes.value : null;
+	const quoteDate = (sh.date || hs300.date || "").slice(0, 10);
+	if (emotion && quoteDate && emotion.date !== quoteDate) {
+		warnings.push(`涨跌家数停在 ${emotion.date || "空日期"}，和行情 ${quoteDate} 不是同一天，不拿来评分`);
+		emotion = null;
+	}
+	const lastBar = tape[tape.length - 1]?.date ?? "";
+	if (lastBar && quoteDate && lastBar !== quoteDate) warnings.push(`K 线停在 ${lastBar}，行情日期是 ${quoteDate}。当天分数只写在行情这一天，不回写到上一根 K 线`);
 	const ranked = rows.filter((row) => row.pct != null).sort((a, b) => (b.pct ?? 0) - (a.pct ?? 0));
 	const desk = {
 		asOf: Date.now(),
@@ -1243,8 +1290,8 @@ async function loadDesk() {
 		laggards: ranked.slice(-6).reverse(),
 		series: seriesRes.status === "fulfilled" ? seriesRes.value.hs300 : [],
 		shSeries: seriesRes.status === "fulfilled" ? seriesRes.value.sh : [],
-		tape: seriesRes.status === "fulfilled" ? seriesRes.value.tape : [],
-		emotion: emotionRes.status === "fulfilled" ? emotionRes.value : null,
+		tape,
+		emotion,
 		ladder,
 		brokers: slim(indexQuote("399975", "证券公司", sina.sz399975)),
 		margin: marginRes.status === "fulfilled" ? marginRes.value : [],
@@ -1331,7 +1378,7 @@ var getArchive = createServerFn({ method: "GET" }).validator((input) => {
 	return {
 		q: typeof raw.q === "string" ? raw.q.slice(0, 80) : "",
 		source: SOURCES.includes(raw.source) ? raw.source : "all",
-		limit: typeof raw.limit === "number" && Number.isFinite(raw.limit) ? Math.min(120, Math.max(12, Math.floor(raw.limit))) : 24
+		limit: typeof raw.limit === "number" && Number.isFinite(raw.limit) ? Math.min(2e3, Math.max(12, Math.floor(raw.limit))) : 24
 	};
 }).handler(getArchive_createServerFn_handler, async ({ data }) => loadFeed({
 	q: data.q,

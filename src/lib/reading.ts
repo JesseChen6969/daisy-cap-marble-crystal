@@ -169,11 +169,11 @@ function readSpokes(input: {
   if (emotion && emotion.up + emotion.down > 0) {
     const ratio = (emotion.up / (emotion.up + emotion.down)) * 100;
     breadth = ratio;
-    if (emotion.limitDown <= 15) breadth += 8;
-    if (emotion.limitDown >= 40) breadth = Math.min(breadth, 22);
-    else if (emotion.limitDown >= 20) breadth = Math.min(breadth, 42);
+    if (emotion.limitDown != null && emotion.limitDown <= 15) breadth += 8;
+    if (emotion.limitDown != null && emotion.limitDown >= 40) breadth = Math.min(breadth, 22);
+    else if (emotion.limitDown != null && emotion.limitDown >= 20) breadth = Math.min(breadth, 42);
     if (emotion.up <= emotion.down) breadth = Math.min(breadth, 38);
-    breadthNote = `上涨 ${emotion.up}，下跌 ${emotion.down}，跌停 ${emotion.limitDown}`;
+    breadthNote = `上涨 ${emotion.up}，下跌 ${emotion.down}，跌停 ${emotion.limitDown ?? "未知"}`;
   }
 
   let line = 0;
@@ -259,8 +259,8 @@ function readBoard(input: {
   if ((hs300.pct ?? 0) > 0.8) inst += 4;
 
   let team = 4;
-  if (emotion && emotion.limitDown <= 15) team += 6;
-  if (emotion && emotion.limitDown >= 40) team -= 6;
+  if (emotion?.limitDown != null && emotion.limitDown <= 15) team += 6;
+  if (emotion?.limitDown != null && emotion.limitDown >= 40) team -= 6;
   if ((a50?.pct ?? -1) >= -0.3) team += 4;
   if (sh.price != null && sh.price >= LINE) team += 10;
   else if (sh.price != null && sh.price >= 3750) team += 2;
@@ -272,11 +272,11 @@ function readBoard(input: {
   let retail = 0;
   if (emotion && emotion.up + emotion.down > 0) {
     retail = (emotion.up / (emotion.up + emotion.down)) * 22;
-    if (emotion.limitUp >= 80) retail += 5;
-    if (emotion.limitDown >= 40) retail = Math.min(retail, 8);
+    if (emotion.limitUp != null && emotion.limitUp >= 80) retail += 5;
+    if (emotion.limitDown != null && emotion.limitDown >= 40) retail = Math.min(retail, 8);
   }
 
-  let hot = emotion ? Math.min(14, emotion.limitUp / 6) : 0;
+  let hot = emotion?.limitUp != null ? Math.min(14, emotion.limitUp / 6) : 0;
   if ((cyb.pct ?? 0) > 0.6) hot += 5;
   if ((brokers?.pct ?? -1) > 0) hot += 4;
   if ((cyb.pct ?? 0) < -0.3) hot -= 3;
@@ -315,15 +315,18 @@ function readBoard(input: {
       label: "游资",
       score: clampTo(hot, 25),
       max: 25,
-      note: emotion ? `涨停 ${emotion.limitUp}，创业板 ${fmtPct(cyb.pct)}` : "涨停家数没有取到",
+      note: emotion?.limitUp != null ? `涨停 ${emotion.limitUp}，创业板 ${fmtPct(cyb.pct)}` : "涨停家数没有取到",
     },
   ];
   const forceSum = forces.reduce((sum, arm) => sum + arm.score, 0);
   const forceMax = forces.reduce((sum, arm) => sum + arm.max, 0);
   const rate = spokes.length ? spokes.reduce((sum, item) => sum + item.score, 0) / spokes.length : 0;
 
+  const limitsKnown = emotion != null && emotion.limitDown != null && emotion.limitUp != null;
+  const breadthKnown = emotion != null && emotion.up + emotion.down > 0;
   let band = "观望";
-  if (input.panic) band = "回避";
+  if (!breadthKnown || !limitsKnown) band = "数据不足";
+  else if (input.panic) band = "回避";
   else if (rate >= 60) band = "做多";
   else if (rate >= 40) band = "一般";
   else if (input.healed) band = "磨底";
@@ -334,8 +337,8 @@ function readBoard(input: {
   else if (input.forceLabel === "结构不对") pattern = "错位市";
 
   let heat = "一般";
-  if (input.panic || (emotion != null && emotion.limitDown >= 40)) heat = "短期冰点";
-  else if (emotion != null && emotion.limitUp >= 90 && emotion.up > emotion.down * 1.8) heat = "过热";
+  if (input.panic || (emotion?.limitDown != null && emotion.limitDown >= 40)) heat = "短期冰点";
+  else if (emotion?.limitUp != null && emotion.limitUp >= 90 && emotion.up > emotion.down * 1.8) heat = "过热";
   else if (input.healed && !input.volumeHot) heat = "不热";
 
   const quiet =
@@ -486,8 +489,8 @@ export function readMarket(desk: Desk): Reading {
   const clock = readClock(desk.shSeries.length > 0 ? desk.shSeries : desk.series, sh.price);
   const volumeHot = indicators.av != null && indicators.av >= 2;
 
-  const healed = emotion != null && emotion.limitDown <= 15 && emotion.up > emotion.down;
-  const panic = emotion != null && emotion.limitDown >= 40;
+  const healed = emotion != null && emotion.limitDown != null && emotion.limitDown <= 15 && emotion.up > emotion.down;
+  const panic = emotion != null && emotion.limitDown != null && emotion.limitDown >= 40;
   const belowLine = sh.price != null && sh.price < LINE;
   const techQuiet =
     cyb.pct != null && sh.pct != null && cyb.pct <= 0 && sh.pct >= cyb.pct;
@@ -559,7 +562,7 @@ export function readMarket(desk: Desk): Reading {
       title: "龙哥先止血",
       state: panic ? "waiting" : lineBack && healed ? "met" : healed ? "partial" : "waiting",
       evidence: emotion
-        ? `上涨 ${emotion.up}，下跌 ${emotion.down}，涨停 ${emotion.limitUp}，跌停 ${emotion.limitDown}`
+        ? `上涨 ${emotion.up}，下跌 ${emotion.down}，涨停 ${emotion.limitUp ?? "未知"}，跌停 ${emotion.limitDown ?? "未知"}`
         : "全市场涨跌没有取到",
     },
     {
@@ -622,8 +625,10 @@ export function readMarket(desk: Desk): Reading {
     : healed
       ? "护盘底看的是跌停有没有蔓延、指数有没有失控。这一层大致按住了。市场底要市场自己磨出来，最好是 U 不是 V，而且非科技来带。时间不够的时候，他们不把试多说成右侧。"
       : "上涨家数还没压过下跌。他们写过，这种日子谈止跌太早，大手买也只是跌得慢一点。";
-  const position =
-    metCount >= 4
+  const limitsKnown = emotion != null && emotion.limitDown != null && emotion.limitUp != null;
+  const position = !emotion || !limitsKnown
+    ? "涨跌家数或跌停没有取全，暂不可判断。"
+    : metCount >= 4
       ? "右侧齐了，仍然按底仓做，不是梭哈。看对只是一半，仓位重了、成本高了、耗太久，一样会被洗出去。"
       : healed
         ? "可以试多。试多是底仓：长线不空仓，也不重仓，看周线，跌到前一个平台再加一点。看对只是一半。"
@@ -631,7 +636,7 @@ export function readMarket(desk: Desk): Reading {
 
   const detail = [
     emotion
-      ? `全市场上涨 ${emotion.up} 家、下跌 ${emotion.down} 家、跌停 ${emotion.limitDown} 家。复盘里把跌停只有十来家，看成恐慌没有蔓延。`
+      ? `全市场上涨 ${emotion.up} 家、下跌 ${emotion.down} 家、跌停 ${emotion.limitDown ?? "未知"} 家。复盘里把跌停只有十来家，看成恐慌没有蔓延。`
       : "",
     belowLine
       ? `上证收在 ${fmt(sh.price, 0)}，仍低于他们写了一年多的 3800 护盘线。`

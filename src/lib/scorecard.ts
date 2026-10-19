@@ -1,7 +1,10 @@
 import { fmtPct } from "./format";
 import type { Desk, TapePoint } from "./market.types";
 import { readMarket } from "./reading";
-import { marketPhase, shanghaiParts } from "./zones";
+import { shanghaiParts } from "./zones";
+
+export const PATH_MODEL = "path-v1";
+export const LIVE_MODEL = "six-v1";
 
 export type Dim = {
   label: string;
@@ -61,9 +64,12 @@ export type Scorecard = {
   yestWord: string;
   retailDelta: number | null;
   retailWord: string;
-  longPct: number;
-  shortPct: number;
+  longPct: number | null;
+  shortPct: number | null;
   positionNote: string;
+  risk: "triggered" | "clear" | "unknown";
+  model: string;
+  seriesModel: string;
   mainName: string;
   mainPct: number | null;
   mainShare: number | null;
@@ -80,21 +86,24 @@ function clamp(n: number, max: number): number {
   return Math.round(Math.max(0, Math.min(max, n)) * 100) / 100;
 }
 
-function paceVolume(av: number | null): { value: number | null; early: boolean; note: string } {
+export function paceVolume(
+  av: number | null,
+  quote: { date: string; time: string },
+  now = new Date(),
+): { value: number | null; early: boolean; note: string } {
   if (av == null) return { value: null, early: false, note: "成交没有取到" };
-  const phase = marketPhase().phase;
-  if (phase === "closed" || phase === "weekend") {
-    return { value: av, early: false, note: `两市成交 ${av.toFixed(2)} 万亿` };
-  }
-  const parts = shanghaiParts();
-  const mins = Number(parts.hour) * 60 + Number(parts.minute);
+  const parts = shanghaiParts(now);
+  const today = `${parts.year}-${parts.month}-${parts.day}`;
+  const date = quote.date.slice(0, 10);
+  const [hour = "0", minute = "0"] = quote.time.split(":");
+  const mins = Number(hour) * 60 + Number(minute);
+  const inSession = date === today && mins >= 9 * 60 + 30 && mins < 15 * 60;
+  if (!inSession) return { value: av, early: false, note: `两市成交 ${av.toFixed(2)} 万亿` };
   let elapsed = 0;
   if (mins >= 13 * 60) elapsed = 120 + Math.min(120, mins - 13 * 60);
   else if (mins >= 11 * 60 + 30) elapsed = 120;
-  else if (mins >= 9 * 60 + 30) elapsed = mins - (9 * 60 + 30);
-  if (elapsed < 25) {
-    return { value: null, early: true, note: "开盘不久，成交还不作缩量判断" };
-  }
+  else elapsed = mins - (9 * 60 + 30);
+  if (elapsed < 25) return { value: null, early: true, note: "开盘不久，成交还不作缩量判断" };
   const pace = Math.round(av * (240 / elapsed) * 100) / 100;
   return { value: pace, early: false, note: `盘中折全日约 ${pace.toFixed(2)} 万亿，已成交 ${av.toFixed(2)}` };
 }
@@ -131,7 +140,7 @@ function volumeTone(tape: TapePoint[]): string | null {
   return "平量";
 }
 
-function buildSeries(tape: TapePoint[], rate: number, force: number, stampLive: boolean): ScoreDay[] {
+function buildSeries(tape: TapePoint[]): ScoreDay[] {
   const rows: ScoreDay[] = tape.map((point) => {
     const path = pathScore(point);
     return {
@@ -149,11 +158,6 @@ function buildSeries(tape: TapePoint[], rate: number, force: number, stampLive: 
       mark: null,
     };
   });
-  const last = rows[rows.length - 1];
-  if (stampLive && last) {
-    last.rate = Math.round(rate * 100) / 100;
-    last.force = Math.round(force * 100) / 100;
-  }
   for (let i = 1; i < rows.length; i += 1) {
     const prev = rows[i - 1];
     const curr = rows[i];
@@ -166,24 +170,28 @@ function buildSeries(tape: TapePoint[], rate: number, force: number, stampLive: 
 
 export function scoreDesk(desk: Desk): Scorecard {
   const reading = readMarket(desk);
-  const { emotion, sh, cyb, hs300, hstech, indicators, brokers } = desk;
+  const { sh, cyb, hs300, hstech, indicators, brokers } = desk;
+  const quoteDate = (sh.date || hs300.date || "").slice(0, 10);
+  const emotion =
+    desk.emotion && desk.emotion.date && (!quoteDate || desk.emotion.date === quoteDate) ? desk.emotion : null;
   const a50 = ladderPct(desk, "50");
   const gz = ladderPct(desk, "2000");
   const gap = hs300.pct != null && gz != null ? hs300.pct - gz : null;
   const up = emotion?.up ?? 0;
   const down = emotion?.down ?? 0;
-  const known = up + down > 0;
+  const known = emotion != null && up + down > 0;
+  const limitsKnown = emotion != null && emotion.limitUp != null && emotion.limitDown != null;
+  const limitDown = emotion?.limitDown ?? null;
+  const limitUp = emotion?.limitUp ?? null;
   const ratio = known ? up / (up + down) : 0;
-  const panic = (emotion?.limitDown ?? 0) >= 40;
-  const healed = emotion != null && emotion.limitDown <= 15 && emotion.up > emotion.down;
+  const panic = limitDown != null && limitDown >= 40;
+  const healed = known && limitDown != null && limitDown <= 15 && up > down;
   const forceLabel = reading.force.label;
 
   let effect = known ? ratio * 10 : 0;
-  if (emotion) {
-    effect += Math.min(4, emotion.limitUp / 25);
-    if (emotion.limitDown >= 40) effect = Math.min(effect, 3);
-    else if (emotion.limitDown <= 15) effect += 1.5;
-  }
+  if (known && limitUp != null) effect += Math.min(4, limitUp / 25);
+  if (panic) effect = Math.min(effect, 3);
+  else if (healed) effect += 1.5;
 
   let structure = 6;
   const seq = [a50, hs300.pct, ladderPct(desk, "500"), ladderPct(desk, "1000"), gz].filter(
@@ -205,7 +213,7 @@ export function scoreDesk(desk: Desk): Scorecard {
   if (healed) line += 4;
   if (panic) line = Math.min(line, 4);
 
-  const paced = paceVolume(indicators.av);
+  const paced = paceVolume(indicators.av, { date: sh.date || hs300.date, time: sh.time || hs300.time });
   let volume = paced.early ? 8 : 4;
   if (paced.value != null) {
     if (paced.value >= 1 && paced.value <= 2) volume = 8 + (paced.value - 1) * 4;
@@ -242,14 +250,15 @@ export function scoreDesk(desk: Desk): Scorecard {
   const rate = Math.round((points / FULL) * 10000) / 100;
 
   let band = "观望";
-  if (panic) band = "回避";
+  if (!known || !limitsKnown) band = "数据不足";
+  else if (panic) band = "回避";
   else if (rate >= 60) band = "做多";
   else if (rate >= 40) band = "一般";
 
   const inst = 10 + (gap ?? 0) * 5 + ((hs300.pct ?? 0) > 0.8 ? 4 : 0) + ((hs300.pct ?? 0) < -1 ? -6 : 0);
   let team = 4;
-  if (emotion && emotion.limitDown <= 15) team += 6;
-  if (emotion && emotion.limitDown >= 40) team -= 6;
+  if (limitDown != null && limitDown <= 15) team += 6;
+  if (limitDown != null && limitDown >= 40) team -= 6;
   if ((a50 ?? -1) >= -0.3) team += 4;
   if (sh.price != null && sh.price >= 3800) team += 10;
   else if (sh.price != null && sh.price >= 3750) team += 2;
@@ -257,9 +266,9 @@ export function scoreDesk(desk: Desk): Scorecard {
   if (forceLabel === "像一起拉") team += 6;
   const foreign = hstech.pct == null ? 0 : 6 + hstech.pct * 2.5;
   let retail = known ? ratio * 22 : 0;
-  if (emotion && emotion.limitUp >= 80) retail += 5;
-  if (emotion && emotion.limitDown >= 40) retail = Math.min(retail, 8);
-  let hot = emotion ? Math.min(14, emotion.limitUp / 6) : 0;
+  if (limitUp != null && limitUp >= 80) retail += 5;
+  if (limitDown != null && limitDown >= 40) retail = Math.min(retail, 8);
+  let hot = limitUp != null ? Math.min(14, limitUp / 6) : 0;
   if ((cyb.pct ?? 0) > 0.6) hot += 5;
   if ((brokers?.pct ?? -1) > 0) hot += 4;
   if ((cyb.pct ?? 0) < -0.3) hot -= 3;
@@ -269,7 +278,7 @@ export function scoreDesk(desk: Desk): Scorecard {
     { key: "国家队", label: "国家队", score: clamp(team, 30), max: 30, note: forceLabel },
     { key: "外资", label: "外资", score: clamp(foreign, 15), max: 15, note: hstech.pct != null ? `恒生科技 ${fmtPct(hstech.pct)}` : "恒生科技没有取到" },
     { key: "散户", label: "散户", score: clamp(retail, 31), max: 31, note: known ? `上涨占比 ${(ratio * 100).toFixed(1)}%` : "涨跌家数没有取到" },
-    { key: "游资", label: "游资", score: clamp(hot, 25), max: 25, note: emotion ? `涨停 ${emotion.limitUp}` : "涨停家数没有取到" },
+    { key: "游资", label: "游资", score: clamp(hot, 25), max: 25, note: limitUp != null ? `涨停 ${limitUp}` : "涨停家数没有取到" },
   ];
   const best = arms.reduce((top, arm) => (arm.score / arm.max > top.score / top.max ? arm : top), arms[0]!);
   if (best.score / best.max >= 0.72) best.label = `${best.key}主导`;
@@ -291,14 +300,14 @@ export function scoreDesk(desk: Desk): Scorecard {
 
   let heat = "一般";
   if (panic) heat = "短期冰点";
-  else if (emotion && emotion.limitUp >= 90 && ratio > 0.65) heat = "过热";
+  else if (limitUp != null && limitUp >= 90 && ratio > 0.65) heat = "过热";
   else if (healed && (indicators.av == null || indicators.av < 2)) heat = "不热";
 
   const quiet =
     sh.pct != null && cyb.pct != null && Math.abs(sh.pct) < 0.8 && Math.abs(cyb.pct) < 1.2 ? "安静" : "有波动";
 
   let gs = 0;
-  if (emotion && emotion.limitUp >= 80) gs += 4;
+  if (limitUp != null && limitUp >= 80) gs += 4;
   if (ratio > 0.67) gs += 3;
   if ((indicators.av != null && !paced.early && (paced.value ?? 0) >= 2.2)) gs += 2;
   if ((cyb.pct ?? 0) > 2) gs += 3;
@@ -379,10 +388,15 @@ export function scoreDesk(desk: Desk): Scorecard {
           : "平淡";
 
   const met = reading.checks.filter((item) => item.met).length;
-  let longPct = 0;
-  let shortPct = 0;
-  let positionNote = "右侧没齐，先观望";
-  if (panic) {
+  let longPct: number | null = null;
+  let shortPct: number | null = null;
+  let positionNote = "关键涨跌或跌停没有取到，暂不可判断";
+  const risk: Scorecard["risk"] = !limitsKnown ? "unknown" : panic ? "triggered" : "clear";
+  if (!known || !limitsKnown) {
+    positionNote = "关键涨跌或跌停没有取到，暂不可判断";
+  } else if (panic) {
+    longPct = 0;
+    shortPct = 0;
     positionNote = "冰点不抄";
   } else if (reading.phase === "右侧靠近" || (rate >= 60 && met >= 4)) {
     longPct = 30;
@@ -392,6 +406,10 @@ export function scoreDesk(desk: Desk): Scorecard {
     longPct = 15;
     shortPct = 0;
     positionNote = "试多底仓，短线不加";
+  } else {
+    longPct = 0;
+    shortPct = 0;
+    positionNote = "右侧没齐，先观望";
   }
 
   const lead = desk.boardLead;
@@ -439,12 +457,15 @@ export function scoreDesk(desk: Desk): Scorecard {
     longPct,
     shortPct,
     positionNote,
+    risk,
+    model: LIVE_MODEL,
+    seriesModel: PATH_MODEL,
     mainName: lead?.name ?? "行业榜没有取到",
     mainPct: lead?.pct ?? null,
     mainShare: lead ? Math.round(lead.share * 10) / 10 : null,
     kill,
-    series: buildSeries(desk.tape, rate, forceRate, emotion != null),
-    limitUp: emotion?.limitUp ?? null,
+    series: buildSeries(desk.tape),
+    limitUp,
     headline: reading.headline,
   };
 }

@@ -135,10 +135,10 @@ export function ArchiveView({ initial }: { initial: ArchivePayload }) {
         )}
       </ul>
 
-      {data.matched > data.items.length ? (
+      {data.hasMore ? (
         <button
           type="button"
-          onClick={() => setLimit((value) => Math.min(120, value + 24))}
+          onClick={() => setLimit((value) => value + 24)}
           className="h-11 w-full rounded-lg border border-line text-sm text-muted"
         >
           再显示一些
